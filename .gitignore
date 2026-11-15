@@ -1,0 +1,9 @@
+data/raw/
+data/processed/
+data/*.db
+results/artefacts/
+__pycache__/
+.env
+*.zip
+data/toy/
+.venv/

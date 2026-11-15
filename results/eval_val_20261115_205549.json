@@ -1,0 +1,145 @@
+{
+  "split": "val",
+  "sample": 2000,
+  "seeds": [
+    1
+  ],
+  "config": {
+    "validation_days": 1,
+    "graph": {
+      "min_cooccurrence": 1
+    },
+    "retrieval": {
+      "hops": 3,
+      "damping": 0.85,
+      "recency_decay": 0.9,
+      "ignored_weight": 0.5,
+      "category_weight": 0.3,
+      "max_ignored_impressions": 20
+    },
+    "eval": {
+      "k_values": [
+        5,
+        10
+      ],
+      "recall_k": 20,
+      "seed": 42
+    }
+  },
+  "results": {
+    "random": {
+      "mean_over_seeds": {
+        "auc": 0.4992,
+        "mrr": 0.192,
+        "ndcg@5": 0.19,
+        "ndcg@10": 0.2542,
+        "recall@20": 0.6879
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.4992,
+            "mrr": 0.192,
+            "ndcg@5": 0.19,
+            "ndcg@10": 0.2542,
+            "recall@20": 0.6879
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.4994,
+            "mrr": 0.186,
+            "ndcg@5": 0.1834,
+            "ndcg@10": 0.2479,
+            "recall@20": 0.6824,
+            "n": 1953
+          },
+          "short_history": {
+            "auc": 0.4969,
+            "mrr": 0.2131,
+            "ndcg@5": 0.2105,
+            "ndcg@10": 0.2725,
+            "recall@20": 0.7045,
+            "n": 280
+          },
+          "seconds": 0.2
+        }
+      ]
+    },
+    "popular": {
+      "mean_over_seeds": {
+        "auc": 0.521,
+        "mrr": 0.2127,
+        "ndcg@5": 0.213,
+        "ndcg@10": 0.277,
+        "recall@20": 0.6888
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.521,
+            "mrr": 0.2127,
+            "ndcg@5": 0.213,
+            "ndcg@10": 0.277,
+            "recall@20": 0.6888
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.5186,
+            "mrr": 0.204,
+            "ndcg@5": 0.2035,
+            "ndcg@10": 0.2686,
+            "recall@20": 0.6839,
+            "n": 1953
+          },
+          "short_history": {
+            "auc": 0.5369,
+            "mrr": 0.2449,
+            "ndcg@5": 0.2577,
+            "ndcg@10": 0.3155,
+            "recall@20": 0.7366,
+            "n": 280
+          },
+          "seconds": 0.2
+        }
+      ]
+    },
+    "graph": {
+      "mean_over_seeds": {
+        "auc": 0.5743,
+        "mrr": 0.2481,
+        "ndcg@5": 0.2601,
+        "ndcg@10": 0.3214,
+        "recall@20": 0.7392
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.5743,
+            "mrr": 0.2481,
+            "ndcg@5": 0.2601,
+            "ndcg@10": 0.3214,
+            "recall@20": 0.7392
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.5754,
+            "mrr": 0.2421,
+            "ndcg@5": 0.2535,
+            "ndcg@10": 0.3153,
+            "recall@20": 0.7365,
+            "n": 1953
+          },
+          "short_history": {
+            "auc": 0.5506,
+            "mrr": 0.2601,
+            "ndcg@5": 0.2679,
+            "ndcg@10": 0.3239,
+            "recall@20": 0.7243,
+            "n": 280
+          },
+          "seconds": 9.6
+        }
+      ]
+    }
+  }
+}

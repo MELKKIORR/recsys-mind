@@ -1,0 +1,25 @@
+# Paths
+raw_dir: data/toy/raw
+processed_dir: data/toy/processed
+db_path: data/toy/recsys.db
+artefacts_dir: data/toy/artefacts
+
+# Split: MIND train period -> train + validation (last day), MIND dev -> test
+validation_days: 1
+
+# Graph and retrieval (MLE-Core)
+graph:
+  min_cooccurrence: 1        # keep entity pairs seen together in at least N train articles
+retrieval:
+  hops: 3                    # 1 to 3
+  damping: 0.85              # 0.5 to 0.85
+  recency_decay: 0.9         # weight of the i-th most recent click = decay^i
+  ignored_weight: 0.5        # 0 gives the ablation without the ignored signal
+  category_weight: 0.3
+  max_ignored_impressions: 20
+
+# Evaluation (PL)
+eval:
+  k_values: [5, 10]
+  recall_k: 20
+  seed: 42
