@@ -10,6 +10,7 @@ import pandas as pd
 from src.config import load_config
 from src.graph.retrieval import GraphRecommender
 from src.llm.client import LLMClient
+from src.llm.profile_summary import summarize
 from src.llm.rerank import Reranker, cap_per_category, explanation
 
 
@@ -18,7 +19,8 @@ class Predictor:
         self.cfg = load_config(config_path)
         self.mode = mode
         self.rec = GraphRecommender.from_config(self.cfg)
-        self.reranker = Reranker.from_config(self.cfg, self.rec, LLMClient.from_config(self.cfg))
+        self.llm = LLMClient.from_config(self.cfg)
+        self.reranker = Reranker.from_config(self.cfg, self.rec, self.llm)
         test = pd.read_pickle(self.cfg["processed_dir"] / "behaviors_test.pkl")
         # Demo candidate pool: articles of the test period, as if they were today's news
         self.pool = sorted({n for c in test["candidates"] for n in c})
@@ -55,3 +57,10 @@ class Predictor:
                         "reason": explanation(path, res["reasons"].get(a)),
                         "llm_status": res["status"]})
         return out
+
+    def profile_summary(self, user_id: str, likes=(), dislikes=(), topics=None) -> dict:
+        """Two-sentence LLM summary of the reader for the Profile page (cached, template if it fails)."""
+        history = list(self.known_history.get(user_id, [])) + list(likes)
+        ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
+        profile = self.rec.build_profile(history, ignored, topics)
+        return summarize(self.rec, profile, self.llm)
