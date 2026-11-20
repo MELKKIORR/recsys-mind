@@ -1,0 +1,40 @@
+# Written by scripts/tune.py on the validation split (holdout readers)
+raw_dir: data/raw
+processed_dir: data/processed
+db_path: data/recsys.db
+artefacts_dir: results/artefacts
+validation_days: 1
+graph:
+  min_cooccurrence: 1
+retrieval:
+  hops: 3
+  damping: 0.75
+  recency_decay: 1.0
+  ignored_weight: 0.25
+  category_weight: 0.3
+  entity_idf: true
+  max_ignored_impressions: 20
+eval:
+  k_values:
+  - 5
+  - 10
+  recall_k: 20
+  seed: 42
+llm:
+  provider: mock
+  model: ''
+  base_url: ''
+  temperature: 0
+  max_tokens: 800
+  cache_dir: results/llm_cache
+  prompt_version: v1
+  timeout: 60
+  price_input_per_mtok: 0.0
+  price_output_per_mtok: 0.0
+rerank:
+  top_n: 10
+  fusion_weight: 0.0
+  fusion: learned
+  fusion_weights: results/fusion_weights.json
+  min_valid_share: 0.5
+  max_per_category: 4
