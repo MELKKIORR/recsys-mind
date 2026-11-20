@@ -1,14 +1,16 @@
 """predict(user_id, k) called by the API (MLE-Ops).
 
 mode="mock": most popular articles of the candidate pool (fake predict used to build the site).
-mode="graph": graph retrieval on the candidate pool, with evidence paths. The LLM re-ranking of the
-top 10 is added in Week 3.
+mode="graph": graph retrieval on the candidate pool, with evidence paths, then LLM re-ranking of the
+top 10 (from the disk cache, or the graph ranking if the LLM answer is invalid or the call fails).
 Already read or disliked articles, including reactions logged since the last build, are removed.
 """
 import pandas as pd
 
 from src.config import load_config
 from src.graph.retrieval import GraphRecommender
+from src.llm.client import LLMClient
+from src.llm.rerank import Reranker, cap_per_category, explanation
 
 
 class Predictor:
@@ -16,6 +18,7 @@ class Predictor:
         self.cfg = load_config(config_path)
         self.mode = mode
         self.rec = GraphRecommender.from_config(self.cfg)
+        self.reranker = Reranker.from_config(self.cfg, self.rec, LLMClient.from_config(self.cfg))
         test = pd.read_pickle(self.cfg["processed_dir"] / "behaviors_test.pkl")
         # Demo candidate pool: articles of the test period, as if they were today's news
         self.pool = sorted({n for c in test["candidates"] for n in c})
@@ -38,11 +41,17 @@ class Predictor:
 
         profile = self.rec.build_profile(history, ignored, topics)
         scores = self.rec.score(profile, pool)
-        order = sorted(range(len(pool)), key=lambda i: -scores[i])[offset:offset + k]
+        # Only the best graph candidates go to the LLM: re-rank the top N, keep the rest in graph order
+        shortlist_idx = sorted(range(len(pool)), key=lambda i: -scores[i])[:max(k + offset, 50)]
+        shortlist = [pool[i] for i in shortlist_idx]
+        res = self.reranker.rerank(profile, shortlist, [scores[i] for i in shortlist_idx])
+        order = cap_per_category(res["order"], self.rec.category,
+                                 self.cfg["rerank"].get("max_per_category", 0), k=offset + k)
         out = []
-        for i in order:
-            path = self.rec.evidence_path(profile, pool[i])
-            out.append({"article_id": pool[i], "score": float(scores[i]),
+        for a in order[offset:offset + k]:
+            path = res["paths"].get(a) or self.rec.evidence_path(profile, a)
+            out.append({"article_id": a, "score": float(scores[pool.index(a)]),
                         "evidence_path": path["entities"] if path else None,
-                        "reason": path["text"] if path else "Matches your favourite topics"})
+                        "reason": explanation(path, res["reasons"].get(a)),
+                        "llm_status": res["status"]})
         return out

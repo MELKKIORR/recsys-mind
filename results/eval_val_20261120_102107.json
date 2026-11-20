@@ -1,0 +1,141 @@
+{
+  "split": "val",
+  "sample": 2000,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "config": {
+    "validation_days": 1,
+    "graph": {
+      "min_cooccurrence": 1
+    },
+    "retrieval": {
+      "hops": 3,
+      "damping": 0.85,
+      "recency_decay": 0.9,
+      "ignored_weight": 0.5,
+      "category_weight": 0.3,
+      "entity_idf": true,
+      "max_ignored_impressions": 20
+    },
+    "eval": {
+      "k_values": [
+        5,
+        10
+      ],
+      "recall_k": 20,
+      "seed": 42
+    },
+    "llm": {
+      "provider": "mock",
+      "model": "",
+      "base_url": "",
+      "temperature": 0,
+      "max_tokens": 800,
+      "cache_dir": "C:\\Users\\Jadev\\Downloads\\recsys-mind\\results\\llm_cache",
+      "prompt_version": "v1"
+    },
+    "rerank": {
+      "top_n": 10,
+      "fusion_weight": 0.5,
+      "min_valid_share": 0.5,
+      "max_per_category": 4
+    }
+  },
+  "results": {
+    "graph": {
+      "mean_over_seeds": {
+        "auc": 0.5715,
+        "mrr": 0.2443,
+        "ndcg@5": 0.2566,
+        "ndcg@10": 0.3153,
+        "recall@20": 0.7321
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.5741,
+            "mrr": 0.248,
+            "ndcg@5": 0.2598,
+            "ndcg@10": 0.3206,
+            "recall@20": 0.7396
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.575,
+            "mrr": 0.2415,
+            "ndcg@5": 0.2529,
+            "ndcg@10": 0.3142,
+            "recall@20": 0.7369,
+            "n": 1953
+          },
+          "short_history": {
+            "auc": 0.5512,
+            "mrr": 0.2611,
+            "ndcg@5": 0.2698,
+            "ndcg@10": 0.323,
+            "recall@20": 0.7234,
+            "n": 280
+          },
+          "seconds": 49.0
+        },
+        {
+          "all": {
+            "auc": 0.5683,
+            "mrr": 0.2411,
+            "ndcg@5": 0.2552,
+            "ndcg@10": 0.3131,
+            "recall@20": 0.7362
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.5681,
+            "mrr": 0.2367,
+            "ndcg@5": 0.2501,
+            "ndcg@10": 0.308,
+            "recall@20": 0.733,
+            "n": 1960
+          },
+          "short_history": {
+            "auc": 0.5091,
+            "mrr": 0.2265,
+            "ndcg@5": 0.2311,
+            "ndcg@10": 0.2928,
+            "recall@20": 0.7336,
+            "n": 281
+          },
+          "seconds": 45.7
+        },
+        {
+          "all": {
+            "auc": 0.5722,
+            "mrr": 0.2438,
+            "ndcg@5": 0.2549,
+            "ndcg@10": 0.3122,
+            "recall@20": 0.7205
+          },
+          "n": 2000,
+          "cold": {
+            "auc": 0.5745,
+            "mrr": 0.24,
+            "ndcg@5": 0.2505,
+            "ndcg@10": 0.3079,
+            "recall@20": 0.7178,
+            "n": 1965
+          },
+          "short_history": {
+            "auc": 0.5182,
+            "mrr": 0.2212,
+            "ndcg@5": 0.2158,
+            "ndcg@10": 0.2769,
+            "recall@20": 0.7054,
+            "n": 242
+          },
+          "seconds": 47.9
+        }
+      ]
+    }
+  }
+}
