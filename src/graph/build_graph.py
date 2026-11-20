@@ -84,7 +84,7 @@ def save(g: dict, cfg: dict) -> str:
     pd.to_pickle({"popularity": g["popularity"], "ignored": g["ignored"]}, out / "train_stats.pkl")
     with open(out / "config.json", "w") as f:
         json.dump({k: (str(v) if not isinstance(v, (dict, list, int, float)) else v)
-                   for k, v in cfg.items()}, f, indent=2)
+                   for k, v in cfg.items()}, f, indent=2, default=str)
     (cfg["artefacts_dir"] / "LATEST").write_text(out.name)
     return str(out)
 
