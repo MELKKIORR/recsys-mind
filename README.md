@@ -19,13 +19,40 @@ python -m src.data.preprocess            # cleaning + split, prints the data sta
 python -m src.data.db                    # SQLite database data/recsys.db
 python -m src.graph.build_graph          # graph + artefacts in results/artefacts/
 
-uvicorn api.main:app --host 0.0.0.0 --port 8000        # API, docs at http://localhost:8000/docs
-streamlit run app/streamlit_app.py                     # frontend, in a second terminal
+uvicorn api.main:app --host 0.0.0.0 --port 8000        # API, docs at http://127.0.0.1:8000/docs
+streamlit run app/streamlit_app.py                     # website at http://127.0.0.1:8501, second terminal
 ```
 
-`PREDICT_MODE=graph uvicorn api.main:app ...` serves the graph model instead of the popular-articles mock.
+The API serves the graph model with the LLM re-ranking of the top 10 (`PREDICT_MODE=mock` gives the
+popular-articles mock of Week 2). The LLM answer is read from the disk cache (`results/llm_cache/`), never
+called while the reader waits: on a cache miss the graph ranking is served and the LLM is called in the
+background, so the next request of that reader is re-ranked (`LLM_CACHE_ONLY=0` calls it live instead).
+Choose the LLM in `configs/default.yaml` (see `src/llm/README.md`).
+
+On Windows use `127.0.0.1`, not `localhost`: `localhost` tries IPv6 first and adds about 2 s to every call.
 Without the real data, `python scripts/make_toy_data.py` writes a small fake dataset in the MIND format in
-`data/toy/raw`; add `configs/test.yaml` after each `python -m ...` command to run the pipeline on it.
+`data/toy/raw`; add `configs/test.yaml` after each `python -m ...` command to run the pipeline on it, and
+start the API with `RECSYS_CONFIG=configs/test.yaml`.
+
+### With Docker
+
+```bash
+docker compose --profile setup run --rm prepare     # once: download MIND, preprocess, database, graph
+docker compose up --build                            # API on :8000, website on http://127.0.0.1:8501
+```
+
+`data/` and `results/` are mounted from the host, so the data prepared without Docker is reused as is.
+Pass the LLM key with `ANTHROPIC_API_KEY=... docker compose up` (or `LLM_API_KEY`).
+
+### Response time
+
+```bash
+python scripts/latency_check.py --users 20 --rounds 2      # the API must be running
+```
+
+Times 20 demo readers twice (cold then warm LLM cache), checks that a like sent to `/log_interaction` is in
+the `Interactions` table and changes the next top 10, and writes `results/latency_<date>.md`. Every API
+response also carries its server time in the `X-Response-Time-ms` header; `GET /latency` summarises them.
 
 ## Evaluate
 
