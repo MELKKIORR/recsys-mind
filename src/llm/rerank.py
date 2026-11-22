@@ -14,6 +14,8 @@ import re
 
 import numpy as np
 
+from src.llm.client import CacheMiss
+
 SYSTEM = {
     "v1": (
         "You re-rank news articles for one reader of a news site. Use only the article ids you are given. "
@@ -124,6 +126,8 @@ class Reranker:
     def _ask(self, system, payload, ids):
         try:
             text = self.client.complete(system, json.dumps(payload, ensure_ascii=False))
+        except CacheMiss:       # website in cache-only mode: graph order now, LLM order once cached
+            return {"order": list(ids), "reasons": {}, "status": "fallback_cache_miss", "unknown": 0}
         except RuntimeError:
             self.stats["llm_errors"] += 1
             return {"order": list(ids), "reasons": {}, "status": "fallback_llm_error", "unknown": 0}

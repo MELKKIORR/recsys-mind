@@ -16,6 +16,7 @@ import json
 import pandas as pd
 
 from src.config import ROOT, load_config
+from src.llm.client import CacheMiss
 from src.llm.rerank import describe_profile, extract_json
 
 SYSTEM = (
@@ -47,6 +48,8 @@ def summarize(rec, profile, client, n_titles=10) -> dict:
     payload = {"task": "profile_summary", "profile": desc, "recent_titles": titles}
     try:
         text = client.complete(SYSTEM, json.dumps(payload, ensure_ascii=False))
+    except CacheMiss:                                 # website: not cached yet, filled in the background
+        return {"summary": template_summary(desc), "status": "fallback_cache_miss"}
     except RuntimeError:
         return {"summary": template_summary(desc), "status": "fallback_llm_error"}
     data = extract_json(text)
