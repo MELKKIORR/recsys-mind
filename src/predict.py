@@ -4,6 +4,7 @@ mode="mock": most popular articles of the candidate pool (fake predict used to b
 mode="graph": graph retrieval on the candidate pool, with evidence paths, then LLM re-ranking of the
 top 10 (from the disk cache, or the graph ranking if the LLM answer is invalid or the call fails).
 Already read or disliked articles, including reactions logged since the last build, are removed.
+Articles with the same title and abstract (duplicate content) are shown only once.
 
 Serving (SE): the website must answer in under 2 s, so by default the API reads the LLM answer from the
 disk cache only (live_llm=False). On a cache miss the graph ranking is served (llm_status
@@ -37,6 +38,24 @@ class Predictor:
         last = pd.concat([pd.read_pickle(self.cfg["processed_dir"] / f"behaviors_{s}.pkl")
                           for s in ("train", "val")]).sort_values("time")
         self.known_history = last.groupby("user_id")["history"].last().to_dict()
+        # Article abstracts, used with the titles to detect duplicate content
+        self.abstract = dict(zip(self.rec.articles["news_id"], self.rec.articles["abstract"]))
+
+    def _content_key(self, a):
+        """Normalized (title, abstract) of an article; the article id when both are empty."""
+        title = " ".join((self.rec.title.get(a, "") or "").lower().split())
+        abstract = " ".join((self.abstract.get(a, "") or "").lower().split())
+        return (title, abstract) if title or abstract else (a,)
+
+    def _dedupe(self, ranked):
+        """Keep the first (best ranked) article of each group of duplicates, in order."""
+        seen, out = set(), []
+        for a in ranked:
+            key = self._content_key(a)
+            if key not in seen:
+                seen.add(key)
+                out.append(a)
+        return out
 
     def predict(self, user_id: str, k: int = 10, offset: int = 0, likes=(), dislikes=(),
                 topics=None, live_llm=False) -> list[dict]:
@@ -46,7 +65,7 @@ class Predictor:
         pool = [a for a in self.pool if a not in banned]
 
         if self.mode == "mock" or (not history and not topics):
-            ranked = sorted(pool, key=lambda a: -self.rec.popularity.get(a, 0))
+            ranked = self._dedupe(sorted(pool, key=lambda a: -self.rec.popularity.get(a, 0)))
             top = ranked[offset:offset + k]
             return [{"article_id": a, "score": float(self.rec.popularity.get(a, 0)),
                      "evidence_path": None, "source_title": None, "reason": "Popular this week",
@@ -55,11 +74,12 @@ class Predictor:
         profile = self.rec.build_profile(history, ignored, topics)
         scores = self.rec.score(profile, pool)
         score_of = dict(zip(pool, scores))
+        # Duplicates are removed before the LLM sees the candidates (offset applies after dedup)
+        graph_order = self._dedupe(sorted(pool, key=lambda a: -score_of[a]))
         # Only the best graph candidates go to the LLM: re-rank the top N, keep the rest in graph order
-        shortlist_idx = sorted(range(len(pool)), key=lambda i: -scores[i])[:max(k + offset, 50)]
-        shortlist = [pool[i] for i in shortlist_idx]
+        shortlist = graph_order[:max(k + offset, 50)]
         reranker = self.live_reranker if live_llm else self.reranker
-        res = reranker.rerank(profile, shortlist, [scores[i] for i in shortlist_idx])
+        res = reranker.rerank(profile, shortlist, [score_of[a] for a in shortlist])
         order = cap_per_category(res["order"], self.rec.category,
                                  self.cfg["rerank"].get("max_per_category", 0), k=offset + k)
         out = []
