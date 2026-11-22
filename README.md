@@ -61,12 +61,26 @@ response also carries its server time in the `X-Response-Time-ms` header; `GET /
 ## Evaluate
 
 ```bash
-python -m src.eval.evaluate --split val --models random popular graph --sample 2000 --seeds 1 2 3
+python -m src.eval.evaluate --split val --models random popular graph graph_no_ignored graph_1hop --sample 2000 --seeds 1 2 3
 ```
 
 Metrics per impression (AUC, MRR, NDCG@5, NDCG@10, Recall@20), averaged, with separate results for
 impressions that contain a cold-start article and for readers with fewer than 5 clicks.
 Results are saved in `results/`.
+
+## Final evaluation, leakage check and report tables (PL)
+
+All tuning is done on the validation split. The test split is used once, for the final systems:
+
+```bash
+python -m src.eval.evaluate --split test --final --models random popular graph graph_no_ignored graph_1hop full --sample 2000 --seeds 1 2 3
+python -m src.eval.leakage_check         # results/leakage_check.md, every line must be PASS
+python -m src.eval.report_tables         # results/report_tables.md and results/figures/ablations_*.png
+```
+
+Without `--final` the test split is refused; a second run needs `--force` and is logged in
+`results/final_test_log.json`. Cold-start NDCG@10 ranks only the articles never seen in training,
+among themselves, inside each impression.
 
 ## Tests
 
