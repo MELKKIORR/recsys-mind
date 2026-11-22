@@ -3,7 +3,7 @@
 mode="mock": most popular articles of the candidate pool (fake predict used to build the site).
 mode="graph": graph retrieval on the candidate pool, with evidence paths, then LLM re-ranking of the
 top 10 (from the disk cache, or the graph ranking if the LLM answer is invalid or the call fails).
-Already read, ignored or disliked articles, including reactions logged since the last build, are removed.
+Already read or disliked articles, including reactions logged since the last build, are removed.
 Articles with the same title and abstract (duplicate content) are shown only once.
 
 Serving (SE): the website must answer in under 2 s, so by default the API reads the LLM answer from the
@@ -61,7 +61,7 @@ class Predictor:
                 topics=None, live_llm=False) -> list[dict]:
         history = list(self.known_history.get(user_id, [])) + [a for a in likes]
         ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
-        banned = set(history) | set(ignored)
+        banned = set(history) | set(dislikes)
         pool = [a for a in self.pool if a not in banned]
 
         if self.mode == "mock" or (not history and not topics):
