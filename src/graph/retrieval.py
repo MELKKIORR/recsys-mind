@@ -37,7 +37,7 @@ class Profile:
 
 class GraphRecommender:
     def __init__(self, artefact_dir: Path, hops=3, damping=0.85, recency_decay=0.9,
-                 ignored_weight=0.5, category_weight=0.3):
+                 ignored_weight=0.5, category_weight=0.3, entity_idf=True):
         d = Path(artefact_dir)
         self.ae = sp.load_npz(d / "article_entity.npz").tocsr()
         ee = sp.load_npz(d / "entity_entity.npz").tocsr()
@@ -54,6 +54,11 @@ class GraphRecommender:
         inv = np.divide(1.0, deg, out=np.zeros_like(deg, dtype=np.float64), where=deg > 0)
         self.p_t = (sp.diags(inv) @ ee).T.tocsr()          # transpose of the row-normalised matrix
         self.n_ent_per_article = np.asarray(self.ae.sum(axis=1)).ravel()
+        # Hub entities ("Associated Press", "United States") appear in thousands of articles and link
+        # everything to everything. IDF weighting lowers them in the profile, the scores and the paths.
+        df = np.asarray(self.ae.sum(axis=0)).ravel()
+        idf = np.log((1 + self.ae.shape[0]) / (1 + df))
+        self.idf = idf / idf.max() if entity_idf and idf.max() > 0 else np.ones_like(idf)
         self.hops, self.damping, self.recency_decay = hops, damping, recency_decay
         self.ignored_weight, self.category_weight = ignored_weight, category_weight
 
@@ -62,7 +67,8 @@ class GraphRecommender:
         r = cfg["retrieval"]
         return cls(artefact_dir or latest_artefacts(cfg["artefacts_dir"]), hops=r["hops"],
                    damping=r["damping"], recency_decay=r["recency_decay"],
-                   ignored_weight=r["ignored_weight"], category_weight=r["category_weight"])
+                   ignored_weight=r["ignored_weight"], category_weight=r["category_weight"],
+                   entity_idf=r.get("entity_idf", True))
 
     # 1. profile -------------------------------------------------------------
     def _weights(self, articles, weights):
@@ -73,7 +79,7 @@ class GraphRecommender:
             if i is None:
                 continue
             row = self.ae.getrow(i)
-            ent[row.indices] += w
+            ent[row.indices] += w * self.idf[row.indices]
             c = self.category[a]
             cats[c] = cats.get(c, 0.0) + w
         if ent.sum() > 0:
@@ -88,9 +94,13 @@ class GraphRecommender:
         w = [self.recency_decay ** (n - 1 - i) for i in range(n)]   # MIND history is oldest first
         ent, cats = self._weights(history, w)
         if topics and not history:                                   # onboarding: 3 chosen topics
-            pool = [a for a in self.popularity if self.category.get(a) in topics]
-            pool = sorted(pool, key=lambda a: -self.popularity[a])[:50]
-            ent, _ = self._weights(pool, [1.0] * len(pool))
+            # each chosen topic gets the same weight, so one busy topic cannot fill the whole profile
+            ent = np.zeros(self.ae.shape[1])
+            for t in topics:
+                pool = sorted((a for a in self.popularity if self.category.get(a) == t),
+                              key=lambda a: -self.popularity[a])[:20]
+                e, _ = self._weights(pool, [1.0] * len(pool))
+                ent += e / len(topics)
             cats = {t: 1.0 / len(topics) for t in topics}
         ign = ignored or []
         ign_ent, ign_cats = self._weights(ign, [1.0] * len(ign))
@@ -122,7 +132,7 @@ class GraphRecommender:
             return scores
         sub = self.ae[idx[known]]
         n = np.maximum(1.0, self.n_ent_per_article[idx[known]])
-        ent_score = (sub @ r) / n
+        ent_score = (sub @ (r * self.idf)) / n
         ign_score = (sub @ profile.ignored_entity_w) / n
         cats = [self.category[c] for c, k in zip(candidates, known) if k]
         cat_aff = np.array([profile.category_w.get(c, 0.0) for c in cats])
@@ -142,12 +152,14 @@ class GraphRecommender:
         prof_ents = np.nonzero(profile.entity_w)[0]
         best, best_val = None, 0.0
         for ec in cand_ents:
-            if profile.entity_w[ec] > best_val:                       # 0 hop: shared entity
-                best, best_val = (ec, ec), profile.entity_w[ec]
+            # Paths use idf squared: an explanation must name a specific subject, not a hub
+            if profile.entity_w[ec] * self.idf[ec] ** 2 > best_val:   # 0 hop: shared entity
+                best, best_val = (ec, ec), profile.entity_w[ec] * self.idf[ec] ** 2
             links = self.ee.getrow(ec)                                # 1 hop: linked entity
             common = np.intersect1d(links.indices, prof_ents)
             for eu in common:
-                v = profile.entity_w[eu] * self.ee[ec, eu] / (1 + self.ee[ec, eu])
+                v = (profile.entity_w[eu] * (self.idf[eu] * self.idf[ec]) ** 2
+                     * self.ee[ec, eu] / (1 + self.ee[ec, eu]))
                 if v > best_val:
                     best, best_val = (eu, ec), v
         if best is None:
@@ -157,8 +169,19 @@ class GraphRecommender:
                        if a in self.art_idx and eu in self.ae.getrow(self.art_idx[a]).indices), None)
         labels = [self.ent_labels[eu]] if eu == ec else [self.ent_labels[eu], self.ent_labels[ec]]
         return {"source_article": source, "source_title": self.title.get(source, ""),
-                "entities": labels,
-                "text": f"Because you read: {self.title.get(source, '')} ({' -> '.join(labels)})"}
+                "entities": labels, "source_entity": int(eu),
+                "text": (f"Because you read: {self.title[source]} ({' -> '.join(labels)})" if source
+                         else f"Linked to your topics: {' -> '.join(labels)}")}
+
+    def score_without_entity(self, profile: Profile, candidates: list, entity: int) -> np.ndarray:
+        """Scores after removing one entity from the profile (used to test explanation fidelity)."""
+        w = profile.entity_w.copy()
+        w[entity] = 0.0
+        if w.sum() > 0:
+            w /= w.sum()
+        cut = Profile(w, profile.category_w, profile.ignored_entity_w, profile.ignored_category_w,
+                      profile.diversity, profile.history)
+        return self.score(cut, candidates)
 
     def forward(self, history, candidates, ignored=None, topics=None, with_paths=True):
         profile = self.build_profile(history, ignored, topics)

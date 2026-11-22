@@ -3,6 +3,7 @@ raw_dir: data/toy/raw
 processed_dir: data/toy/processed
 db_path: data/toy/recsys.db
 artefacts_dir: data/toy/artefacts
+results_dir: data/toy/results    # outputs of the MLE-Ops scripts on toy data
 
 # Split: MIND train period -> train + validation (last day), MIND dev -> test
 validation_days: 1
@@ -16,6 +17,7 @@ retrieval:
   recency_decay: 0.9         # weight of the i-th most recent click = decay^i
   ignored_weight: 0.5        # 0 gives the ablation without the ignored signal
   category_weight: 0.3
+  entity_idf: true           # down-weight hub entities (Associated Press...); false = Week 2 behaviour
   max_ignored_impressions: 20
 
 # Evaluation (PL)
@@ -23,3 +25,23 @@ eval:
   k_values: [5, 10]
   recall_k: 20
   seed: 42
+
+# LLM (MLE-Core re-ranking, MLE-Ops client and cache)
+llm:
+  provider: mock             # mock | anthropic | openai  ("openai" also covers Mistral, Groq, Ollama via base_url)
+  model: ""                  # model name of the chosen provider
+  base_url: ""               # only for provider openai: e.g. https://api.mistral.ai/v1, https://api.groq.com/openai/v1, http://localhost:11434/v1
+  temperature: 0
+  max_tokens: 800
+  cache_dir: data/toy/llm_cache
+  prompt_version: v1
+  timeout: 60                # seconds before a call counts as failed (the caller falls back)
+  price_input_per_mtok: 0.0  # $ per million input tokens of the chosen model, for the cost measure
+  price_output_per_mtok: 0.0 # $ per million output tokens
+rerank:
+  top_n: 10                  # candidates sent to the LLM (5, 10, 15)
+  fusion_weight: 0.5         # fixed rule: 0 = graph only, 1 = LLM only
+  fusion: rule               # rule (fixed weight above) | learned (trained layer, python -m src.llm.fusion)
+  fusion_weights: data/toy/fusion_weights.json
+  min_valid_share: 0.5       # below this share of valid ids, the LLM answer is rejected (fallback)
+  max_per_category: 4        # website only: at most 4 articles of one category in the top 10 (0 = off)

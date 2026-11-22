@@ -7,3 +7,5 @@ __pycache__/
 *.zip
 data/toy/
 .venv/
+results/llm_cache/
+configs/tuned_test.yaml

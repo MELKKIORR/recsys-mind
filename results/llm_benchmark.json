@@ -1,0 +1,48 @@
+{
+  "rerank_no_cache": {
+    "n": 5,
+    "median_s": 0.0,
+    "max_s": 0.0,
+    "mean_input_tokens": 510.2,
+    "mean_output_tokens": 57.2,
+    "mean_cost_usd": 0.0
+  },
+  "rerank_cached": {
+    "n": 5,
+    "median_s": 0.02,
+    "max_s": 0.022,
+    "mean_input_tokens": 0.0,
+    "mean_output_tokens": 0.0,
+    "mean_cost_usd": 0.0
+  },
+  "summary_no_cache": {
+    "n": 5,
+    "median_s": 0.0,
+    "max_s": 0.0,
+    "mean_input_tokens": 400.4,
+    "mean_output_tokens": 14.0,
+    "mean_cost_usd": 0.0
+  },
+  "summary_cached": {
+    "n": 5,
+    "median_s": 0.021,
+    "max_s": 0.025,
+    "mean_input_tokens": 0.0,
+    "mean_output_tokens": 0.0,
+    "mean_cost_usd": 0.0
+  },
+  "setup": {
+    "provider": "mock",
+    "model": "",
+    "price_input_per_mtok": 0.0,
+    "price_output_per_mtok": 0.0,
+    "top_n": 10,
+    "fallback_rate": 0.0
+  },
+  "planned_runs_usd": {
+    "1000_impressions": 0.0,
+    "eval_3_seeds_x_2000": 0.0,
+    "fusion_training_4000": 0.0
+  },
+  "eval_3_seeds_x_2000_minutes_no_cache": 0.0
+}
