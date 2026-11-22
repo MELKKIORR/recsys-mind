@@ -27,11 +27,13 @@ eval:
 
 # LLM (MLE-Core re-ranking, MLE-Ops client and cache)
 llm:
-  provider: mock             # mock | anthropic | openai  ("openai" also covers Mistral, Groq, Ollama via base_url)
-  model: ""                  # model name of the chosen provider
-  base_url: ""               # only for provider openai: e.g. https://api.mistral.ai/v1, https://api.groq.com/openai/v1, http://localhost:11434/v1
+  provider: openai            # mock | anthropic | openai  ("openai" also covers Mistral, Groq, Ollama via base_url)
+  model: "openai/gpt-oss-20b"                  # model name of the chosen provider
+  base_url: "https://api.groq.com/openai/v1"               # only for provider openai: e.g. https://api.mistral.ai/v1, https://api.groq.com/openai/v1, http://localhost:11434/v1
   temperature: 0
-  max_tokens: 800
+  max_tokens: 2000
+  extra_body:
+    reasoning_effort: low
   cache_dir: results/llm_cache
   prompt_version: v1
   timeout: 60                # seconds before a call counts as failed (the caller falls back)
