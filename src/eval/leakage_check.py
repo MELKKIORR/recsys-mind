@@ -5,8 +5,11 @@
 Checks:
   1. the split is temporal: train ends before validation starts, validation before test
   2. no impression id is shared between train, validation and test
-  3. the saved graph and statistics are exactly what the code builds from the TRAIN split alone
-     (entity-entity edges, popularity, ignored lists): they are rebuilt and compared
+  3. the saved graph and statistics are exactly what the code builds: they are rebuilt and compared.
+     Entity-entity edges, popularity and ignored lists come from the TRAIN split alone. The
+     article-entity matrix holds every article, test articles included, on purpose: it only uses
+     article content (the entities in the title and abstract), never a click, and it is what lets
+     the model score a new article (cold start)
   4. no validation or test click is counted in the popularity used by the models
   5. the test split was used for final evaluations only (results/final_test_log.json)
 """
@@ -41,6 +44,11 @@ def main(config_path="configs/default.yaml") -> bool:
     check("No shared impression", overlap == 0, f"{overlap} impressions in more than one split")
 
     g = build(cfg)                                    # rebuild from train only, as the code does
+    saved_ae = sp.load_npz(art / "article_entity.npz")
+    diff_ae = abs(saved_ae - g["ae"]).sum()
+    check("Article-entity matrix from content only", diff_ae == 0,
+          f"saved vs rebuilt from titles and abstracts: {saved_ae.nnz} vs {g['ae'].nnz} links, "
+          f"total difference {diff_ae:.0f}; no click is used")
     saved_ee = sp.load_npz(art / "entity_entity.npz")
     diff = abs(saved_ee - g["ee"]).sum()
     check("Graph edges from train only", diff == 0,
@@ -63,9 +71,10 @@ def main(config_path="configs/default.yaml") -> bool:
 
     log_path = ROOT / "results" / "final_test_log.json"
     log = json.loads(log_path.read_text()) if log_path.exists() else []
-    forced = sum(e.get("forced", False) for e in log)
+    done = [e for e in log if e.get("status", "completed") == "completed"]
+    forced = sum(e.get("forced", False) for e in done)
     check("Test split used once", forced == 0,
-          f"{len(log)} logged test run(s), {forced} forced" if log else "not used yet")
+          f"{len(done)} completed test run(s), {forced} forced" if done else "not used yet")
 
     ok = all(c[1] for c in checks)
     lines = ["# Leakage check", "", f"Artefacts: {art.name}", "",

@@ -88,21 +88,31 @@ def evaluate(behaviors: pd.DataFrame, score_fn, k_values=(5, 10), recall_k=20,
     return res
 
 
+TEST_LOG = ROOT / "results" / "final_test_log.json"
+
+
 def guard_test_split(args) -> None:
-    """The test split is touched once, after tuning on validation. Every test run is logged."""
-    lock = ROOT / "results" / "final_test_log.json"
+    """The test split is touched once, after tuning on validation. Checked before the run."""
     if not args.final:
         raise SystemExit("The test split is only for the final evaluation. Tune on --split val, "
                          "then run once with --split test --final.")
-    log = json.loads(lock.read_text()) if lock.exists() else []
-    if log and not args.force:
-        raise SystemExit(f"The test split was already used on {log[-1]['date']} (see {lock}). "
+    log = json.loads(TEST_LOG.read_text()) if TEST_LOG.exists() else []
+    if any(e.get("status") == "completed" for e in log) and not args.force:
+        done = [e for e in log if e.get("status") == "completed"][-1]
+        raise SystemExit(f"The test split was already used on {done['date']} (see {TEST_LOG}). "
                          "Add --force only if you have a real reason, it will be logged.")
+
+
+def record_test_run(args, results_file) -> None:
+    """Logged only after the evaluation finished and its results were saved."""
     from src.graph.build_graph import git_commit
-    log.append({"date": f"{datetime.now():%Y-%m-%d %H:%M}", "commit": git_commit(),
-                "models": args.models, "sample": args.sample, "seeds": args.seeds, "forced": bool(log)})
-    lock.parent.mkdir(exist_ok=True)
-    lock.write_text(json.dumps(log, indent=2))
+    log = json.loads(TEST_LOG.read_text()) if TEST_LOG.exists() else []
+    forced = any(e.get("status") == "completed" for e in log)
+    log.append({"date": f"{datetime.now():%Y-%m-%d %H:%M}", "commit": git_commit(), "status": "completed",
+                "models": args.models, "sample": args.sample, "seeds": args.seeds,
+                "results": str(results_file.name), "forced": forced})
+    TEST_LOG.parent.mkdir(exist_ok=True)
+    TEST_LOG.write_text(json.dumps(log, indent=2))
 
 
 def main():
@@ -180,6 +190,8 @@ def main():
                    "config": {k: v for k, v in cfg.items() if isinstance(v, (dict, int, float))},
                    "results": results}, f, indent=2, default=str)
     print("Saved", out)
+    if args.split == "test":
+        record_test_run(args, out)
 
 
 if __name__ == "__main__":

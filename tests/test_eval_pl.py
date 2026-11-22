@@ -41,3 +41,23 @@ def test_test_split_needs_final_flag():
     from src.eval.evaluate import guard_test_split
     with pytest.raises(SystemExit):
         guard_test_split(SimpleNamespace(final=False, force=False))
+
+
+def test_failed_test_run_is_not_logged(built, monkeypatch, tmp_path):
+    import src.eval.evaluate as ev
+    monkeypatch.setattr(ev, "TEST_LOG", tmp_path / "log.json")
+    args = SimpleNamespace(final=True, force=False, models=["graph"], sample=0, seeds=[1])
+    ev.guard_test_split(args)                       # check only: nothing written
+    assert not (tmp_path / "log.json").exists()
+    ev.record_test_run(args, tmp_path / "eval_test_x.json")
+    with pytest.raises(SystemExit):                 # second run refused once one has completed
+        ev.guard_test_split(args)
+
+
+def test_one_score_call_per_impression(built):
+    import pandas as pd
+    from src.eval.evaluate import evaluate
+    beh = pd.read_pickle(built["processed_dir"] / "behaviors_val.pkl").head(20)
+    calls = []
+    evaluate(beh, lambda row: calls.append(1) or [0.0] * len(row.candidates))
+    assert len(calls) == len(beh)
