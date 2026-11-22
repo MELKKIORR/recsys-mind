@@ -43,6 +43,10 @@ docker compose up --build                            # API on :8000, website on 
 
 `data/` and `results/` are mounted from the host, so the data prepared without Docker is reused as is.
 Pass the LLM key with `ANTHROPIC_API_KEY=... docker compose up` (or `LLM_API_KEY`).
+Set `GIT_COMMIT` (`$env:GIT_COMMIT = git rev-parse --short HEAD` in PowerShell) before `prepare` so the graph
+version carries the commit; without it the version ends in `_nogit`, since `.git` is not copied into the image.
+Tested on Docker Desktop 29.9 (Windows 11) from a fresh clone: `prepare` takes about 2 min, then both services
+are healthy within 15 s.
 
 ### Response time
 

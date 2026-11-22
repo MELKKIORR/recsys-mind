@@ -1,8 +1,10 @@
 # docker compose --profile setup run --rm prepare    # once: download MIND, preprocess, database, graph
 # docker compose up --build                           # API on :8000, website on :8501
+# Optional, to name the graph version after the commit (.git is not in the image):
+#   PowerShell: $env:GIT_COMMIT = git rev-parse --short HEAD     bash: export GIT_COMMIT=$(git rev-parse --short HEAD)
 services:
   prepare:
-    build: .
+    build: {context: ., args: {GIT_COMMIT: "${GIT_COMMIT:-}"}}
     profiles: [setup]
     command: sh -c "python scripts/download_mind.py && python -m src.data.preprocess
                     && python -m src.data.db && python -m src.graph.build_graph"

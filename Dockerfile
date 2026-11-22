@@ -2,6 +2,9 @@
 FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+# commit of the code, used to name the graph version (.git is not copied into the image)
+ARG GIT_COMMIT=""
+ENV GIT_COMMIT=$GIT_COMMIT
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .

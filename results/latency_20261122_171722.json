@@ -1,0 +1,201 @@
+{
+  "date": "2026-11-22T17:17:21",
+  "api": "http://127.0.0.1:8000",
+  "health": {
+    "status": "ok",
+    "mode": "graph",
+    "graph_version": "2026-11-22_nogit",
+    "llm": {
+      "provider": "mock",
+      "model": "",
+      "cache_only": true,
+      "serving": {
+        "calls": 0,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "errors": 0,
+        "seconds": 0.0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0
+      },
+      "background": {
+        "calls": 0,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "errors": 0,
+        "seconds": 0.0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0
+      },
+      "rerank": {
+        "impressions": 0,
+        "fallback": 0,
+        "partial": 0,
+        "unknown_ids": 0,
+        "llm_errors": 0
+      }
+    }
+  },
+  "users": [
+    "U10631",
+    "U10936",
+    "U13027",
+    "U13099",
+    "U14190",
+    "U15281",
+    "U15459",
+    "U181",
+    "U18664",
+    "U19235",
+    "U20209",
+    "U22083",
+    "U2353",
+    "U23637",
+    "U25467",
+    "U270",
+    "U28349",
+    "U28718",
+    "U29123",
+    "U29841"
+  ],
+  "k": 10,
+  "rounds": [
+    {
+      "round": 1,
+      "client_ms": {
+        "n": 20,
+        "p50": 90.0,
+        "p95": 242.0,
+        "max": 277.1,
+        "share_under_2s": 1.0
+      },
+      "server_ms": {
+        "n": 20,
+        "p50": 76.7,
+        "p95": 236.8,
+        "max": 250.6,
+        "share_under_2s": 1.0
+      },
+      "llm_status": {
+        "fallback_cache_miss": 20
+      },
+      "profile_client_ms": {
+        "n": 20,
+        "p50": 101.6,
+        "p95": 179.5,
+        "max": 192.1,
+        "share_under_2s": 1.0
+      },
+      "summary_status": {
+        "fallback_cache_miss": 20
+      }
+    },
+    {
+      "round": 2,
+      "client_ms": {
+        "n": 20,
+        "p50": 47.1,
+        "p95": 69.6,
+        "max": 75.7,
+        "share_under_2s": 1.0
+      },
+      "server_ms": {
+        "n": 20,
+        "p50": 41.9,
+        "p95": 66.9,
+        "max": 73.4,
+        "share_under_2s": 1.0
+      },
+      "llm_status": {
+        "ok": 20
+      },
+      "profile_client_ms": {
+        "n": 20,
+        "p50": 16.8,
+        "p95": 32.3,
+        "max": 32.6,
+        "share_under_2s": 1.0
+      },
+      "summary_status": {
+        "ok": 20
+      }
+    }
+  ],
+  "like_check": {
+    "user_id": "U10631",
+    "liked": "N32078",
+    "interaction_id": 1,
+    "in_database": true,
+    "top10_before": [
+      "N32078",
+      "N16553",
+      "N5913",
+      "N44205",
+      "N12523",
+      "N5076",
+      "N55897",
+      "N42844",
+      "N51344",
+      "N13055"
+    ],
+    "top10_after": [
+      "N16553",
+      "N51344",
+      "N5913",
+      "N5076",
+      "N14993",
+      "N52858",
+      "N44205",
+      "N7344",
+      "N12523",
+      "N55897"
+    ],
+    "changed": true
+  },
+  "server_latency": {
+    "/health": {
+      "n": 4,
+      "p50": 3.0,
+      "p95": 10.6,
+      "max": 11.9,
+      "share_under_2s": 1.0
+    },
+    "/users/sample": {
+      "n": 1,
+      "p50": 33.5,
+      "p95": 33.5,
+      "max": 33.5,
+      "share_under_2s": 1.0
+    },
+    "/recommendations": {
+      "n": 42,
+      "p50": 50.1,
+      "p95": 186.9,
+      "max": 250.6,
+      "share_under_2s": 1.0
+    },
+    "/user_profile": {
+      "n": 40,
+      "p50": 19.9,
+      "p95": 156.5,
+      "max": 171.0,
+      "share_under_2s": 1.0
+    },
+    "/log_interaction": {
+      "n": 1,
+      "p50": 19.4,
+      "p95": 19.4,
+      "max": 19.4,
+      "share_under_2s": 1.0
+    },
+    "/user_history": {
+      "n": 1,
+      "p50": 15.7,
+      "p95": 15.7,
+      "max": 15.7,
+      "share_under_2s": 1.0
+    }
+  }
+}

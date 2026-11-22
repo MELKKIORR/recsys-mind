@@ -7,6 +7,7 @@ Plus: popularity (clicks in train impressions), ignored articles per user (shown
 No validation or test interaction is used here.
 """
 import json
+import os
 import subprocess
 from collections import Counter, defaultdict
 from datetime import date
@@ -22,8 +23,8 @@ def git_commit() -> str:
     try:
         return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
                                        stderr=subprocess.DEVNULL).decode().strip()
-    except Exception:  # noqa: BLE001
-        return "nogit"
+    except Exception:  # noqa: BLE001  no git in the Docker image: commit passed at build time
+        return os.environ.get("GIT_COMMIT") or "nogit"
 
 
 def build(cfg: dict) -> dict:
