@@ -1,0 +1,290 @@
+{
+  "date": "2026-11-20 19:25",
+  "sample": 1000,
+  "seed": 1,
+  "metric": "ndcg@10",
+  "graph_search": {
+    "hops": [
+      {
+        "value": 1,
+        "auc": 0.5636,
+        "mrr": 0.2456,
+        "ndcg@5": 0.2521,
+        "ndcg@10": 0.3112,
+        "recall@20": 0.7441
+      },
+      {
+        "value": 2,
+        "auc": 0.5618,
+        "mrr": 0.2456,
+        "ndcg@5": 0.2537,
+        "ndcg@10": 0.3111,
+        "recall@20": 0.7445
+      },
+      {
+        "value": 3,
+        "auc": 0.5627,
+        "mrr": 0.2476,
+        "ndcg@5": 0.256,
+        "ndcg@10": 0.3125,
+        "recall@20": 0.745
+      }
+    ],
+    "damping": [
+      {
+        "value": 0.5,
+        "auc": 0.566,
+        "mrr": 0.2492,
+        "ndcg@5": 0.2576,
+        "ndcg@10": 0.314,
+        "recall@20": 0.7435
+      },
+      {
+        "value": 0.65,
+        "auc": 0.5656,
+        "mrr": 0.2486,
+        "ndcg@5": 0.2572,
+        "ndcg@10": 0.3132,
+        "recall@20": 0.7435
+      },
+      {
+        "value": 0.75,
+        "auc": 0.5654,
+        "mrr": 0.2503,
+        "ndcg@5": 0.258,
+        "ndcg@10": 0.3141,
+        "recall@20": 0.744
+      },
+      {
+        "value": 0.85,
+        "auc": 0.5627,
+        "mrr": 0.2476,
+        "ndcg@5": 0.256,
+        "ndcg@10": 0.3125,
+        "recall@20": 0.745
+      }
+    ],
+    "recency_decay": [
+      {
+        "value": 0.7,
+        "auc": 0.5497,
+        "mrr": 0.2363,
+        "ndcg@5": 0.2409,
+        "ndcg@10": 0.3007,
+        "recall@20": 0.7373
+      },
+      {
+        "value": 0.8,
+        "auc": 0.5562,
+        "mrr": 0.2408,
+        "ndcg@5": 0.2483,
+        "ndcg@10": 0.3086,
+        "recall@20": 0.734
+      },
+      {
+        "value": 0.9,
+        "auc": 0.5654,
+        "mrr": 0.2503,
+        "ndcg@5": 0.258,
+        "ndcg@10": 0.3141,
+        "recall@20": 0.744
+      },
+      {
+        "value": 1.0,
+        "auc": 0.5733,
+        "mrr": 0.2548,
+        "ndcg@5": 0.2611,
+        "ndcg@10": 0.3231,
+        "recall@20": 0.7492
+      }
+    ],
+    "ignored_weight": [
+      {
+        "value": 0.0,
+        "auc": 0.5947,
+        "mrr": 0.2569,
+        "ndcg@5": 0.2668,
+        "ndcg@10": 0.3263,
+        "recall@20": 0.7488
+      },
+      {
+        "value": 0.25,
+        "auc": 0.5922,
+        "mrr": 0.2611,
+        "ndcg@5": 0.2736,
+        "ndcg@10": 0.3307,
+        "recall@20": 0.7588
+      },
+      {
+        "value": 0.5,
+        "auc": 0.5733,
+        "mrr": 0.2548,
+        "ndcg@5": 0.2611,
+        "ndcg@10": 0.3231,
+        "recall@20": 0.7492
+      },
+      {
+        "value": 1.0,
+        "auc": 0.5312,
+        "mrr": 0.2243,
+        "ndcg@5": 0.2292,
+        "ndcg@10": 0.2891,
+        "recall@20": 0.7273
+      }
+    ],
+    "category_weight": [
+      {
+        "value": 0.0,
+        "auc": 0.4992,
+        "mrr": 0.203,
+        "ndcg@5": 0.2003,
+        "ndcg@10": 0.2588,
+        "recall@20": 0.6915
+      },
+      {
+        "value": 0.15,
+        "auc": 0.5728,
+        "mrr": 0.2544,
+        "ndcg@5": 0.2611,
+        "ndcg@10": 0.3235,
+        "recall@20": 0.7499
+      },
+      {
+        "value": 0.3,
+        "auc": 0.5922,
+        "mrr": 0.2611,
+        "ndcg@5": 0.2736,
+        "ndcg@10": 0.3307,
+        "recall@20": 0.7588
+      },
+      {
+        "value": 0.5,
+        "auc": 0.5954,
+        "mrr": 0.2589,
+        "ndcg@5": 0.2706,
+        "ndcg@10": 0.3264,
+        "recall@20": 0.7587
+      }
+    ]
+  },
+  "best_graph": {
+    "hops": 3,
+    "damping": 0.75,
+    "recency_decay": 1.0,
+    "ignored_weight": 0.25,
+    "category_weight": 0.3
+  },
+  "fusion_rule": [
+    {
+      "value": 0.0,
+      "auc": 0.5918,
+      "mrr": 0.2611,
+      "ndcg@5": 0.2736,
+      "ndcg@10": 0.3307,
+      "recall@20": 0.7588,
+      "fallback_rate": 0.0
+    },
+    {
+      "value": 0.25,
+      "auc": 0.5918,
+      "mrr": 0.2611,
+      "ndcg@5": 0.2736,
+      "ndcg@10": 0.3307,
+      "recall@20": 0.7588,
+      "fallback_rate": 0.0
+    },
+    {
+      "value": 0.5,
+      "auc": 0.5918,
+      "mrr": 0.2611,
+      "ndcg@5": 0.2736,
+      "ndcg@10": 0.3307,
+      "recall@20": 0.7588,
+      "fallback_rate": 0.0
+    },
+    {
+      "value": 0.75,
+      "auc": 0.5918,
+      "mrr": 0.2611,
+      "ndcg@5": 0.2736,
+      "ndcg@10": 0.3307,
+      "recall@20": 0.7588,
+      "fallback_rate": 0.0
+    },
+    {
+      "value": 1.0,
+      "auc": 0.5918,
+      "mrr": 0.2611,
+      "ndcg@5": 0.2736,
+      "ndcg@10": 0.3307,
+      "recall@20": 0.7588,
+      "fallback_rate": 0.0
+    }
+  ],
+  "best_fusion_weight": 0.0,
+  "fusion_learned_l2": [
+    {
+      "value": 0.0,
+      "auc": 0.5898,
+      "mrr": 0.2576,
+      "ndcg@5": 0.2699,
+      "ndcg@10": 0.3278,
+      "recall@20": 0.7588,
+      "epochs": 37,
+      "best_val_loss": 0.26995,
+      "n_fit": 3000,
+      "n_holdout": 1000,
+      "llm_provider": "mock",
+      "llm_model": "",
+      "llm_fallback_rate": 0.0,
+      "holdout_ndcg@10_graph_order": 0.3307,
+      "holdout_ndcg@10_fusion": 0.3278
+    },
+    {
+      "value": 0.001,
+      "auc": 0.5907,
+      "mrr": 0.2581,
+      "ndcg@5": 0.2706,
+      "ndcg@10": 0.3282,
+      "recall@20": 0.7588,
+      "epochs": 37,
+      "best_val_loss": 0.27005,
+      "n_fit": 3000,
+      "n_holdout": 1000,
+      "llm_provider": "mock",
+      "llm_model": "",
+      "llm_fallback_rate": 0.0,
+      "holdout_ndcg@10_graph_order": 0.3307,
+      "holdout_ndcg@10_fusion": 0.3282
+    },
+    {
+      "value": 0.01,
+      "auc": 0.5919,
+      "mrr": 0.2585,
+      "ndcg@5": 0.2704,
+      "ndcg@10": 0.3286,
+      "recall@20": 0.7588,
+      "epochs": 37,
+      "best_val_loss": 0.27063,
+      "n_fit": 3000,
+      "n_holdout": 1000,
+      "llm_provider": "mock",
+      "llm_model": "",
+      "llm_fallback_rate": 0.0,
+      "holdout_ndcg@10_graph_order": 0.3307,
+      "holdout_ndcg@10_fusion": 0.3286
+    }
+  ],
+  "best_l2": 0.01,
+  "llm": {
+    "provider": "mock",
+    "model": "",
+    "calls": 3835,
+    "cache_hits": 16165,
+    "errors": 0,
+    "seconds": 0.8339732018648647,
+    "input_tokens": 2287271,
+    "output_tokens": 289160,
+    "cost_usd": 0.0
+  }
+}

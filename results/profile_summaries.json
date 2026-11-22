@@ -1,0 +1,98 @@
+{
+  "provider": "mock",
+  "model": "",
+  "statuses": {
+    "ok": 20
+  },
+  "client": {
+    "calls": 20,
+    "cache_hits": 0,
+    "errors": 0,
+    "seconds": 0.0037016001879237592,
+    "input_tokens": 8280,
+    "output_tokens": 280,
+    "cost_usd": 0.0
+  },
+  "summaries": {
+    "U63482": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U59594": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U84756": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U2784": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U72489": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U55621": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U20833": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U79210": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U79449": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U93306": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U54826": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U70875": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U70652": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U40618": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U29761": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U18588": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U19342": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U80850": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U71659": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    },
+    "U67455": {
+      "summary": "Reader of the topics listed in the profile.",
+      "status": "ok"
+    }
+  }
+}

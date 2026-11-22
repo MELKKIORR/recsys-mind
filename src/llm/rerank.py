@@ -7,6 +7,7 @@ The code then checks the answer:
   - duplicates are dropped, missing ids are appended in graph order
   - if the JSON is invalid or too few ids are valid, the graph ranking is used (fallback)
 The final order mixes the graph rank and the LLM rank: fusion_weight 0 = graph only, 1 = LLM only.
+With rerank.fusion: learned, a trained fusion layer (src/llm/fusion.py, MLE-Ops) replaces this fixed rule.
 """
 import json
 import re
@@ -100,8 +101,9 @@ def fuse(graph_order: list, llm_order: list, weight: float) -> list:
 
 class Reranker:
     def __init__(self, rec, client, top_n=10, fusion_weight=0.5, min_valid_share=0.5,
-                 prompt_version="v1"):
+                 prompt_version="v1", fusion=None):
         self.rec, self.client = rec, client
+        self.fusion = fusion                       # learned fusion layer, None = fixed rule
         self.top_n, self.weight, self.min_share = top_n, fusion_weight, min_valid_share
         self.prompt_version = prompt_version
         self.stats = {"impressions": 0, "fallback": 0, "partial": 0, "unknown_ids": 0, "llm_errors": 0}
@@ -109,8 +111,17 @@ class Reranker:
     @classmethod
     def from_config(cls, cfg, rec, client):
         r = cfg["rerank"]
+        fusion = None
+        if r.get("fusion", "rule") == "learned":
+            from src.config import ROOT
+            from src.llm.fusion import FusionLayer
+            path = ROOT / r.get("fusion_weights", "results/fusion_weights.json")
+            if path.exists():
+                fusion = FusionLayer.load(path)
+            else:
+                print(f"No fusion weights in {path}: fixed fusion rule used. Run python -m src.llm.fusion")
         return cls(rec, client, r["top_n"], r["fusion_weight"], r["min_valid_share"],
-                   cfg["llm"]["prompt_version"])
+                   cfg["llm"]["prompt_version"], fusion)
 
     def _ask(self, system, payload, ids):
         try:
@@ -145,7 +156,11 @@ class Reranker:
             for c in top]}
         res = self._ask(SYSTEM[self.prompt_version], payload, top)
         self._record(res)
-        final = fuse(top, res["order"], self.weight) + rest
+        if self.fusion is not None:
+            top_scores = graph_scores[order[:self.top_n]]
+            final = self.fusion.order(self.rec, profile, top, top_scores, res["order"]) + rest
+        else:
+            final = fuse(top, res["order"], self.weight) + rest
         n = len(final)
         rank = {a: r for r, a in enumerate(final)}
         scores = np.array([float(n - rank[c]) for c in candidates])

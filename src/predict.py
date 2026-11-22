@@ -15,6 +15,7 @@ import pandas as pd
 from src.config import load_config
 from src.graph.retrieval import GraphRecommender
 from src.llm.client import LLMClient
+from src.llm.profile_summary import summarize
 from src.llm.rerank import Reranker, cap_per_category, explanation
 
 
@@ -23,8 +24,10 @@ class Predictor:
         self.cfg = load_config(config_path)
         self.mode = mode
         self.rec = GraphRecommender.from_config(self.cfg)
-        # Same cache directory: the live reranker writes the answers the cache-only one reads
-        self.live_reranker = Reranker.from_config(self.cfg, self.rec, LLMClient.from_config(self.cfg))
+        # Live client (MLE-Ops: cost, profile summaries) and, for the website, a cache-only client.
+        # Same cache directory: the live reranker writes the answers the cache-only one reads.
+        self.llm = LLMClient.from_config(self.cfg)
+        self.live_reranker = Reranker.from_config(self.cfg, self.rec, self.llm)
         self.reranker = (Reranker.from_config(self.cfg, self.rec,
                                               LLMClient.from_config(self.cfg, cache_only=True))
                          if cache_only else self.live_reranker)
@@ -69,3 +72,10 @@ class Predictor:
                         "llm_reason": res["reasons"].get(a) or None,
                         "llm_status": res["status"]})
         return out
+
+    def profile_summary(self, user_id: str, likes=(), dislikes=(), topics=None) -> dict:
+        """Two-sentence LLM summary of the reader for the Profile page (cached, template if it fails)."""
+        history = list(self.known_history.get(user_id, [])) + list(likes)
+        ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
+        profile = self.rec.build_profile(history, ignored, topics)
+        return summarize(self.rec, profile, self.llm)
