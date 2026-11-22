@@ -16,6 +16,14 @@ import pandas as pd
 import scipy.sparse as sp
 
 
+# Entities that are never a subject in themselves: kept in the scores, never shown as an explanation.
+# Override with retrieval.path_stop_entities in the config (an empty list switches it off).
+DEFAULT_PATH_STOP_ENTITIES = [
+    "Eastern Time Zone", "Central Time Zone", "Mountain Time Zone", "Pacific Time Zone",
+    "Coordinated Universal Time", "Associated Press", "Reuters", "Agence France-Presse", "Getty Images",
+]
+
+
 def latest_artefacts(artefacts_dir: Path) -> Path:
     name = (Path(artefacts_dir) / "LATEST").read_text().strip()
     return Path(artefacts_dir) / name
@@ -37,7 +45,8 @@ class Profile:
 
 class GraphRecommender:
     def __init__(self, artefact_dir: Path, hops=3, damping=0.85, recency_decay=0.9,
-                 ignored_weight=0.5, category_weight=0.3, entity_idf=True):
+                 ignored_weight=0.5, category_weight=0.3, entity_idf=True,
+                 path_stop_entities=None):
         d = Path(artefact_dir)
         self.ae = sp.load_npz(d / "article_entity.npz").tocsr()
         ee = sp.load_npz(d / "entity_entity.npz").tocsr()
@@ -59,6 +68,11 @@ class GraphRecommender:
         df = np.asarray(self.ae.sum(axis=0)).ravel()
         idf = np.log((1 + self.ae.shape[0]) / (1 + df))
         self.idf = idf / idf.max() if entity_idf and idf.max() > 0 else np.ones_like(idf)
+        # Explanations only: some entities are never a subject in themselves (time zones in TV and sport
+        # schedules, news agencies in bylines). They stay in the scores but are never shown as a path.
+        self.entity_df = df
+        stop = set(DEFAULT_PATH_STOP_ENTITIES if path_stop_entities is None else path_stop_entities)
+        self.path_blocked = np.array([label in stop for label in self.ent_labels], dtype=bool)
         self.hops, self.damping, self.recency_decay = hops, damping, recency_decay
         self.ignored_weight, self.category_weight = ignored_weight, category_weight
 
@@ -68,7 +82,8 @@ class GraphRecommender:
         return cls(artefact_dir or latest_artefacts(cfg["artefacts_dir"]), hops=r["hops"],
                    damping=r["damping"], recency_decay=r["recency_decay"],
                    ignored_weight=r["ignored_weight"], category_weight=r["category_weight"],
-                   entity_idf=r.get("entity_idf", True))
+                   entity_idf=r.get("entity_idf", True),
+                   path_stop_entities=r.get("path_stop_entities"))
 
     # 1. profile -------------------------------------------------------------
     def _weights(self, articles, weights):
@@ -151,6 +166,8 @@ class GraphRecommender:
             return None
         prof_ents = np.nonzero(profile.entity_w)[0]
         best, best_val = None, 0.0
+        cand_ents = [e for e in cand_ents if not self.path_blocked[e]]
+        prof_ents = prof_ents[~self.path_blocked[prof_ents]]
         for ec in cand_ents:
             # Paths use idf squared: an explanation must name a specific subject, not a hub
             if profile.entity_w[ec] * self.idf[ec] ** 2 > best_val:   # 0 hop: shared entity

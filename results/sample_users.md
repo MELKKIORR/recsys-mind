@@ -32,15 +32,15 @@ History: 3 clicks, mostly news (2), movies (1)
 | # | Article | Category | Clicked | Why |
 | --- | --- | --- | --- | --- |
 | 1 | U.S. Troops Will Die If They Remain in Syria, Bashar Al-Assad Warns | news | yes | Because you read: Federal judge overturns ObamaCare transgender protections (Presidency of Barack Obama -> Syr |
-| 2 | 3 Indiana judges suspended after a night of drinking turned into a Whi | news | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (Associated Press -> Indianapolis) |
+| 2 | 3 Indiana judges suspended after a night of drinking turned into a Whi | news | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (London -> Indianapolis) |
 | 3 | 13 Reasons Why's Christian Navarro Slams Disney for Casting 'the White | movies | no | Matches your favourite topics |
 | 4 | Cows swept away by Hurricane Dorian found alive   but how? | lifestyle | no | Because you read: Federal judge overturns ObamaCare transgender protections (Patient Protection and Affordable |
 | 5 | Survivor Contestants Missy Byrd and Elizabeth Beisel Apologize For The | tv | no | Because you read: Federal judge overturns ObamaCare transgender protections (Presidency of Barack Obama -> Twi |
 | 6 | Meghan Markle and Hillary Clinton Secretly Spent the Afternoon Togethe | lifestyle | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (London -> Meghan, Duchess of Suss |
 | 7 | Belichick mocks social media in comments on Garrett incident | sports | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (London -> Pittsburgh Steelers) |
-| 8 | Former North Carolina State, NBA player Anthony Grundy dies in stabbin | sports | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (Associated Press -> Louisville, K |
+| 8 | Former North Carolina State, NBA player Anthony Grundy dies in stabbin | sports | no | Matches your favourite topics |
 | 9 | Opinion: Colin Kaepernick is about to get what he deserves: a chance | sports | no | Matches your favourite topics |
-| 10 | Report: Police investigating woman's death after Redskins' player Mont | sports | no | Because you read: Boris Johnson wins key Brexit bill vote but faces another (Associated Press -> Washington Re |
+| 10 | Report: Police investigating woman's death after Redskins' player Mont | sports | no | Matches your favourite topics |
 
 Our top 10: 5 categories, mean popularity 0.0 clicks. Most-popular top 10: 5 categories, mean popularity 0.0. Articles never seen in training in our top 10: 10. LLM status: ok.
 
