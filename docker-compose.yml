@@ -1,0 +1,37 @@
+# docker compose --profile setup run --rm prepare    # once: download MIND, preprocess, database, graph
+# docker compose up --build                           # API on :8000, website on :8501
+# Optional, to name the graph version after the commit (.git is not in the image):
+#   PowerShell: $env:GIT_COMMIT = git rev-parse --short HEAD     bash: export GIT_COMMIT=$(git rev-parse --short HEAD)
+services:
+  prepare:
+    build: {context: ., args: {GIT_COMMIT: "${GIT_COMMIT:-}"}}
+    profiles: [setup]
+    command: sh -c "python scripts/download_mind.py && python -m src.data.preprocess
+                    && python -m src.data.db && python -m src.graph.build_graph"
+    volumes: [./data:/app/data, ./results:/app/results]
+
+  api:
+    build: .
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+    volumes: [./data:/app/data, ./results:/app/results]
+    environment:
+      PREDICT_MODE: graph
+      LLM_CACHE_ONLY: "1"
+      RECSYS_CONFIG: ${RECSYS_CONFIG:-configs/default.yaml}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      retries: 30
+      start_period: 60s
+
+  web:
+    build: .
+    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports: ["8501:8501"]
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      api: {condition: service_healthy}

@@ -1,139 +1,105 @@
+"""predict(user_id, k) called by the API (MLE-Ops, serving part SE).
 
-"""predict(user_id, k) called by the API (MLE-Ops).
+mode="mock": most popular articles of the candidate pool (fake predict used to build the site).
+mode="graph": graph retrieval on the candidate pool, with evidence paths, then LLM re-ranking of the
+top 10 (from the disk cache, or the graph ranking if the LLM answer is invalid or the call fails).
+Already read, ignored or disliked articles, including reactions logged since the last build, are removed.
+Articles with the same title and abstract (duplicate content) are shown only once.
 
-mode="mock": most popular articles of the candidate pool.
-mode="graph": graph retrieval on the candidate pool, with evidence paths.
-
-Already read or disliked articles, including reactions logged since the last build, are removed.
+Serving (SE): the website must answer in under 2 s, so by default the API reads the LLM answer from the
+disk cache only (live_llm=False). On a cache miss the graph ranking is served (llm_status
+"fallback_cache_miss") and the API calls predict again with live_llm=True in the background, which
+fills the cache: the next request of that reader gets the LLM ranking.
 """
-
 import pandas as pd
 
 from src.config import load_config
 from src.graph.retrieval import GraphRecommender
+from src.llm.client import LLMClient
+from src.llm.profile_summary import summarize
+from src.llm.rerank import Reranker, cap_per_category, explanation
 
 
 class Predictor:
-
-    def __init__(self, mode="mock", config_path="configs/default.yaml"):
-
+    def __init__(self, mode="mock", config_path="configs/default.yaml", cache_only=True):
         self.cfg = load_config(config_path)
-
         self.mode = mode
-
         self.rec = GraphRecommender.from_config(self.cfg)
-
+        # Live client (MLE-Ops: cost, profile summaries) and, for the website, a cache-only client.
+        # Same cache directory: the live reranker writes the answers the cache-only one reads.
+        self.llm = LLMClient.from_config(self.cfg)
+        self.live_reranker = Reranker.from_config(self.cfg, self.rec, self.llm)
+        self.reranker = (Reranker.from_config(self.cfg, self.rec,
+                                              LLMClient.from_config(self.cfg, cache_only=True))
+                         if cache_only else self.live_reranker)
         test = pd.read_pickle(self.cfg["processed_dir"] / "behaviors_test.pkl")
-
         # Demo candidate pool: articles of the test period, as if they were today's news
-
         self.pool = sorted({n for c in test["candidates"] for n in c})
-
-        last = pd.concat([
-            pd.read_pickle(self.cfg["processed_dir"] / f"behaviors_{s}.pkl")
-            for s in ("train", "val")
-        ]).sort_values("time")
-
+        last = pd.concat([pd.read_pickle(self.cfg["processed_dir"] / f"behaviors_{s}.pkl")
+                          for s in ("train", "val")]).sort_values("time")
         self.known_history = last.groupby("user_id")["history"].last().to_dict()
+        # Article abstracts, used with the titles to detect duplicate content
+        self.abstract = dict(zip(self.rec.articles["news_id"], self.rec.articles["abstract"]))
 
-        # Store article abstracts to detect duplicate content
-        self.abstract = dict(zip(
-            self.rec.articles["news_id"],
-            self.rec.articles["abstract"]
-        ))
+    def _content_key(self, a):
+        """Normalized (title, abstract) of an article; the article id when both are empty."""
+        title = " ".join((self.rec.title.get(a, "") or "").lower().split())
+        abstract = " ".join((self.abstract.get(a, "") or "").lower().split())
+        return (title, abstract) if title or abstract else (a,)
+
+    def _dedupe(self, ranked):
+        """Keep the first (best ranked) article of each group of duplicates, in order."""
+        seen, out = set(), []
+        for a in ranked:
+            key = self._content_key(a)
+            if key not in seen:
+                seen.add(key)
+                out.append(a)
+        return out
 
     def predict(self, user_id: str, k: int = 10, offset: int = 0, likes=(), dislikes=(),
-                topics=None) -> list[dict]:
-
+                topics=None, live_llm=False) -> list[dict]:
         history = list(self.known_history.get(user_id, [])) + [a for a in likes]
-
         ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
-
         banned = set(history) | set(ignored)
-
         pool = [a for a in self.pool if a not in banned]
 
-        # Mock mode: rank by popularity
         if self.mode == "mock" or (not history and not topics):
+            ranked = self._dedupe(sorted(pool, key=lambda a: -self.rec.popularity.get(a, 0)))
+            top = ranked[offset:offset + k]
+            return [{"article_id": a, "score": float(self.rec.popularity.get(a, 0)),
+                     "evidence_path": None, "source_title": None, "reason": "Popular this week",
+                     "llm_reason": None, "llm_status": "not_used"} for a in top]
 
-            ranked = sorted(pool, key=lambda a: -self.rec.popularity.get(a, 0))
-
-            unique_pool = []
-            seen = set()
-
-            for a in ranked:
-
-                title = self.rec.title.get(a, "") or ""
-                abstract = self.abstract.get(a, "") or ""
-
-                key = (
-                    " ".join(title.lower().split()),
-                    " ".join(abstract.lower().split())
-                )
-
-                if not key[0] and not key[1]:
-                    key = (a,)
-
-                if key not in seen:
-                    seen.add(key)
-                    unique_pool.append(a)
-
-            top = unique_pool[offset:offset + k]
-
-            return [
-                {
-                    "article_id": a,
-                    "score": float(self.rec.popularity.get(a, 0)),
-                    "evidence_path": None,
-                    "reason": "Popular this week"
-                }
-                for a in top
-            ]
-
-        # Graph mode
         profile = self.rec.build_profile(history, ignored, topics)
-
         scores = self.rec.score(profile, pool)
-
-        order = sorted(range(len(pool)), key=lambda i: -scores[i])
-
+        score_of = dict(zip(pool, scores))
+        # Duplicates are removed before the LLM sees the candidates (offset applies after dedup)
+        graph_order = self._dedupe(sorted(pool, key=lambda a: -score_of[a]))
+        # Only the best graph candidates go to the LLM: re-rank the top N, keep the rest in graph order
+        shortlist = graph_order[:max(k + offset, 50)]
+        reranker = self.live_reranker if live_llm else self.reranker
+        res = reranker.rerank(profile, shortlist, [score_of[a] for a in shortlist])
+        order = cap_per_category(res["order"], self.rec.category,
+                                 self.cfg["rerank"].get("max_per_category", 0), k=offset + k)
         out = []
-        seen = set()
-
-        for i in order:
-
-            a = pool[i]
-
-            title = self.rec.title.get(a, "") or ""
-            abstract = self.abstract.get(a, "") or ""
-
-            key = (
-                " ".join(title.lower().split()),
-                " ".join(abstract.lower().split())
-            )
-
-            if not key[0] and not key[1]:
-                key = (a,)
-
-            if key in seen:
-                continue
-
-            seen.add(key)
-
-            # Apply offset after removing duplicates
-            if len(seen) <= offset:
-                continue
-
-            path = self.rec.evidence_path(profile, a)
-
-            out.append({
-                "article_id": a,
-                "score": float(scores[i]),
-                "evidence_path": path["entities"] if path else None,
-                "reason": path["text"] if path else "Matches your favourite topics"
-            })
-
-            if len(out) >= k:
-                break
-
+        for a in order[offset:offset + k]:
+            path = res["paths"].get(a) or self.rec.evidence_path(profile, a)
+            out.append({"article_id": a, "score": float(score_of[a]),
+                        "evidence_path": path["entities"] if path else None,
+                        "source_title": path["source_title"] or None if path else None,
+                        "reason": explanation(path, res["reasons"].get(a)),
+                        "llm_reason": res["reasons"].get(a) or None,
+                        "llm_status": res["status"]})
         return out
+
+    def profile_summary(self, user_id: str, likes=(), dislikes=(), topics=None, live_llm=False) -> dict:
+        """Two-sentence LLM summary of the reader for the Profile page (template if it fails).
+
+        Same rule as the re-ranking: by default read from the cache only (status "fallback_cache_miss"
+        and the template summary on a miss), live_llm=True calls the LLM and fills the cache."""
+        history = list(self.known_history.get(user_id, [])) + list(likes)
+        ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
+        profile = self.rec.build_profile(history, ignored, topics)
+        client = self.llm if live_llm else self.reranker.client
+        return summarize(self.rec, profile, client)

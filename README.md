@@ -19,23 +19,68 @@ python -m src.data.preprocess            # cleaning + split, prints the data sta
 python -m src.data.db                    # SQLite database data/recsys.db
 python -m src.graph.build_graph          # graph + artefacts in results/artefacts/
 
-uvicorn api.main:app --host 0.0.0.0 --port 8000        # API, docs at http://localhost:8000/docs
-streamlit run app/streamlit_app.py                     # frontend, in a second terminal
+uvicorn api.main:app --host 0.0.0.0 --port 8000        # API, docs at http://127.0.0.1:8000/docs
+streamlit run app/streamlit_app.py                     # website at http://127.0.0.1:8501, second terminal
 ```
 
-`PREDICT_MODE=graph uvicorn api.main:app ...` serves the graph model instead of the popular-articles mock.
+The API serves the graph model with the LLM re-ranking of the top 10 (`PREDICT_MODE=mock` gives the
+popular-articles mock of Week 2). The LLM answer is read from the disk cache (`results/llm_cache/`), never
+called while the reader waits: on a cache miss the graph ranking is served and the LLM is called in the
+background, so the next request of that reader is re-ranked (`LLM_CACHE_ONLY=0` calls it live instead).
+Choose the LLM in `configs/default.yaml` (see `src/llm/README.md`).
+
+On Windows use `127.0.0.1`, not `localhost`: `localhost` tries IPv6 first and adds about 2 s to every call.
 Without the real data, `python scripts/make_toy_data.py` writes a small fake dataset in the MIND format in
-`data/toy/raw`; add `configs/test.yaml` after each `python -m ...` command to run the pipeline on it.
+`data/toy/raw`; add `configs/test.yaml` after each `python -m ...` command to run the pipeline on it, and
+start the API with `RECSYS_CONFIG=configs/test.yaml`.
+
+### With Docker
+
+```bash
+docker compose --profile setup run --rm prepare     # once: download MIND, preprocess, database, graph
+docker compose up --build                            # API on :8000, website on http://127.0.0.1:8501
+```
+
+`data/` and `results/` are mounted from the host, so the data prepared without Docker is reused as is.
+Pass the LLM key with `ANTHROPIC_API_KEY=... docker compose up` (or `LLM_API_KEY`).
+Set `GIT_COMMIT` (`$env:GIT_COMMIT = git rev-parse --short HEAD` in PowerShell) before `prepare` so the graph
+version carries the commit; without it the version ends in `_nogit`, since `.git` is not copied into the image.
+Tested on Docker Desktop 29.9 (Windows 11) from a fresh clone: `prepare` takes about 2 min, then both services
+are healthy within 15 s.
+
+### Response time
+
+```bash
+python scripts/latency_check.py --users 20 --rounds 2      # the API must be running
+```
+
+Times 20 demo readers twice (cold then warm LLM cache), checks that a like sent to `/log_interaction` is in
+the `Interactions` table and changes the next top 10, and writes `results/latency_<date>.md`. Every API
+response also carries its server time in the `X-Response-Time-ms` header; `GET /latency` summarises them.
 
 ## Evaluate
 
 ```bash
-python -m src.eval.evaluate --split val --models random popular graph --sample 2000 --seeds 1 2 3
+python -m src.eval.evaluate --split val --models random popular graph graph_no_ignored graph_1hop --sample 2000 --seeds 1 2 3
 ```
 
 Metrics per impression (AUC, MRR, NDCG@5, NDCG@10, Recall@20), averaged, with separate results for
 impressions that contain a cold-start article and for readers with fewer than 5 clicks.
 Results are saved in `results/`.
+
+## Final evaluation, leakage check and report tables (PL)
+
+All tuning is done on the validation split. The test split is used once, for the final systems:
+
+```bash
+python -m src.eval.evaluate --split test --final --models random popular graph graph_no_ignored graph_1hop full --sample 2000 --seeds 1 2 3
+python -m src.eval.leakage_check         # results/leakage_check.md, every line must be PASS
+python -m src.eval.report_tables         # results/report_tables.md and results/figures/ablations_*.png
+```
+
+Without `--final` the test split is refused; a second run needs `--force` and is logged in
+`results/final_test_log.json`. Cold-start NDCG@10 ranks only the articles never seen in training,
+among themselves, inside each impression.
 
 ## Tests
 
