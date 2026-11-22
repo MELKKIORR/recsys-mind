@@ -21,11 +21,13 @@ eval:
   recall_k: 20
   seed: 42
 llm:
-  provider: mock
-  model: ''
-  base_url: ''
+  provider: openai
+  model: openai/gpt-oss-20b
+  base_url: https://api.groq.com/openai/v1
   temperature: 0
-  max_tokens: 800
+  max_tokens: 2000
+  extra_body:
+    reasoning_effort: low
   cache_dir: results/llm_cache
   prompt_version: v1
   timeout: 60
