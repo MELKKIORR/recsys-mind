@@ -152,6 +152,8 @@ elif page == "Profile":
         st.write("Topics chosen at onboarding: " + ", ".join(prof["topics"]))
     if prof.get("summary"):
         st.info(prof["summary"])
+        if prof.get("summary_status") == "fallback_cache_miss":
+            st.caption("Summary built from your profile numbers; the LLM summary will be ready on the next visit.")
     left, right = st.columns(2)
     with left:
         st.subheader("Categories")

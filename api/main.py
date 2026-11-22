@@ -115,6 +115,16 @@ def warm_llm_cache(user_id, k, offset, likes, dislikes, topics):
             WARMING.discard(user_id)
 
 
+def warm_summary_cache(user_id, likes, dislikes, topics):
+    """Background task: LLM profile summary, so the next Profile page is served from the cache."""
+    key = ("summary", user_id)
+    try:
+        predictor().profile_summary(user_id, likes, dislikes, topics, live_llm=True)
+    finally:
+        with WARM_LOCK:
+            WARMING.discard(key)
+
+
 # Endpoints -----------------------------------------------------------------------------------------
 @app.get("/health")
 def health():
@@ -147,17 +157,24 @@ def recommendations(user_id: str, background: BackgroundTasks, k: int = Query(10
 
 
 @app.get("/user_profile")
-def user_profile(user_id: str):
+def user_profile(user_id: str, background: BackgroundTasks):
     p = predictor()
     likes, dislikes = reactions(user_id)
+    topics = topics_of(user_id) or None
     history = list(p.known_history.get(user_id, [])) + likes
-    prof = p.rec.build_profile(history, list(p.rec.ignored.get(user_id, [])) + dislikes,
-                               topics_of(user_id) or None)
+    prof = p.rec.build_profile(history, list(p.rec.ignored.get(user_id, [])) + dislikes, topics)
+    summary = p.profile_summary(user_id, likes, dislikes, topics)    # from the LLM cache only
+    if summary["status"] == "fallback_cache_miss":
+        with WARM_LOCK:
+            start = ("summary", user_id) not in WARMING
+            WARMING.add(("summary", user_id))
+        if start:
+            background.add_task(warm_summary_cache, user_id, likes, dislikes, topics)
     return {"user_id": user_id, "n_read": len(history), "n_likes": len(likes),
             "n_dislikes": len(dislikes), "topics": topics_of(user_id),
             "categories": prof.category_w, "diversity": round(prof.diversity, 3),
             "top_entities": prof.top_entities(p.rec.ent_labels),
-            "summary": None}  # LLM text summary: MLE-Ops, Week 3
+            "summary": summary["summary"], "summary_status": summary["status"]}
 
 
 @app.get("/user_history")

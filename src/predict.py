@@ -73,9 +73,13 @@ class Predictor:
                         "llm_status": res["status"]})
         return out
 
-    def profile_summary(self, user_id: str, likes=(), dislikes=(), topics=None) -> dict:
-        """Two-sentence LLM summary of the reader for the Profile page (cached, template if it fails)."""
+    def profile_summary(self, user_id: str, likes=(), dislikes=(), topics=None, live_llm=False) -> dict:
+        """Two-sentence LLM summary of the reader for the Profile page (template if it fails).
+
+        Same rule as the re-ranking: by default read from the cache only (status "fallback_cache_miss"
+        and the template summary on a miss), live_llm=True calls the LLM and fills the cache."""
         history = list(self.known_history.get(user_id, [])) + list(likes)
         ignored = list(self.rec.ignored.get(user_id, [])) + list(dislikes)
         profile = self.rec.build_profile(history, ignored, topics)
-        return summarize(self.rec, profile, self.llm)
+        client = self.llm if live_llm else self.reranker.client
+        return summarize(self.rec, profile, client)

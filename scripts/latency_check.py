@@ -5,7 +5,8 @@ Start the API first (uvicorn api.main:app --port 8000); use 127.0.0.1, not local
     python scripts/latency_check.py --users 20 --rounds 2
 Round 1 is usually a cold LLM cache (graph ranking served, LLM called in the background), the next rounds
 are served from the cache. Also checks that a like sent to /log_interaction is stored and changes the
-next recommendations. Writes results/latency_<date>.md and .json; exit code 1 if p95 >= 2 s.
+next recommendations. The Profile page (/user_profile, LLM summary from the cache) is timed
+the same way. Writes results/latency_<date>.md and .json; exit code 1 if p95 >= 2 s.
 """
 import argparse
 import json
@@ -49,14 +50,21 @@ def main():
     rounds = []
     for r in range(args.rounds):
         client_ms, server_ms, status = [], [], {}
+        profile_ms, summary_status = [], {}
         for u in users:
             body, c, s = timed_get(args.api, "/recommendations", user_id=u, k=args.k)
             client_ms.append(c)
             server_ms.append(s)
             status[body["llm_status"]] = status.get(body["llm_status"], 0) + 1
+            prof, c, _ = timed_get(args.api, "/user_profile", user_id=u)
+            profile_ms.append(c)
+            st = prof.get("summary_status")
+            summary_status[st] = summary_status.get(st, 0) + 1
         rounds.append({"round": r + 1, "client_ms": summary(client_ms), "server_ms": summary(server_ms),
-                       "llm_status": status})
+                       "llm_status": status, "profile_client_ms": summary(profile_ms),
+                       "summary_status": summary_status})
         print(f"round {r + 1}: client {rounds[-1]['client_ms']}  llm_status {status}")
+        print(f"         profile {rounds[-1]['profile_client_ms']}  summary_status {summary_status}")
         if r + 1 < args.rounds:
             time.sleep(args.wait)
 
@@ -91,12 +99,18 @@ def main():
         c = r["client_ms"]
         lines.append(f"| {r['round']} | {c['p50']} | {c['p95']} | {c['max']} | {c['share_under_2s']:.0%} "
                      f"| {', '.join(f'{k}: {v}' for k, v in r['llm_status'].items())} |")
+    lines += ["", "Profile page (`/user_profile`, LLM summary from the cache):", "",
+              "| Round | p50 | p95 | max | share < 2 s | summary status |", "| --- | --- | --- | --- | --- | --- |"]
+    for r in rounds:
+        c = r["profile_client_ms"]
+        lines.append(f"| {r['round']} | {c['p50']} | {c['p95']} | {c['max']} | {c['share_under_2s']:.0%} "
+                     f"| {', '.join(f'{k}: {v}' for k, v in r['summary_status'].items())} |")
     lines += ["", f"Like check: reader `{u}` liked `{liked}` -> interaction #{like_check['interaction_id']}, "
               f"in the Interactions table: {like_check['in_database']}, "
               f"top 10 changed: {like_check['changed']}."]
     (ROOT / "results" / f"latency_{stamp}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"saved results/latency_{stamp}.md")
-    worst = max(r["client_ms"]["p95"] for r in rounds)
+    worst = max(max(r["client_ms"]["p95"], r["profile_client_ms"]["p95"]) for r in rounds)
     sys.exit(0 if worst < 2000 and like_check["in_database"] else 1)
 
 

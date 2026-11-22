@@ -71,3 +71,12 @@ def test_onboarding_with_three_topics(client):
 def test_latency_endpoint(client):
     lat = client.get("/latency").json()
     assert lat["/recommendations"]["n"] >= 1 and lat["/recommendations"]["max"] > 0
+
+
+def test_profile_summary_served_from_cache(client):
+    uid = client.get("/users/sample", params={"n": 2}).json()[-1]["user_id"]
+    first = client.get("/user_profile", params={"user_id": uid}).json()
+    assert first["summary"] and first["summary_status"] in ("fallback_cache_miss", "empty_profile")
+    if first["summary_status"] == "fallback_cache_miss":      # LLM called after the response
+        second = client.get("/user_profile", params={"user_id": uid}).json()
+        assert second["summary_status"] in ("ok", "fallback_invalid") and second["summary"]
