@@ -1,0 +1,12 @@
+[
+    {
+        "entity_1": "New England Patriots",
+        "entity_2": "Tom Brady",
+        "relation": "plays_for"
+    },
+    {
+        "entity_1": "Ukraine",
+        "entity_2": "Donald Trump",
+        "relation": "unknown"
+    }
+]
