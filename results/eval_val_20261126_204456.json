@@ -1,0 +1,179 @@
+{
+  "split": "val",
+  "sample": 100,
+  "seeds": [
+    1
+  ],
+  "config": {
+    "validation_days": 1,
+    "graph": {
+      "min_cooccurrence": 1
+    },
+    "retrieval": {
+      "hops": 3,
+      "damping": 0.75,
+      "recency_decay": 1.0,
+      "ignored_weight": 0.25,
+      "category_weight": 0.3,
+      "entity_idf": true,
+      "max_ignored_impressions": 20
+    },
+    "eval": {
+      "k_values": [
+        5,
+        10
+      ],
+      "recall_k": 20,
+      "seed": 42
+    },
+    "llm": {
+      "provider": "openai",
+      "model": "openai/gpt-oss-20b",
+      "base_url": "https://api.groq.com/openai/v1",
+      "temperature": 0,
+      "max_tokens": 2000,
+      "extra_body": {
+        "reasoning_effort": "low"
+      },
+      "cache_dir": "C:\\Users\\Jadev\\Downloads\\recsys-mind\\results\\llm_cache",
+      "prompt_version": "v2",
+      "timeout": 60,
+      "price_input_per_mtok": 0.0,
+      "price_output_per_mtok": 0.0
+    },
+    "rerank": {
+      "top_n": 10,
+      "fusion_weight": 0.5,
+      "fusion": "rule",
+      "fusion_weights": "results/fusion_weights.json",
+      "min_valid_share": 0.5,
+      "max_per_category": 4
+    }
+  },
+  "results": {
+    "graph": {
+      "mean_over_seeds": {
+        "auc": 0.6476,
+        "mrr": 0.2793,
+        "ndcg@5": 0.2982,
+        "ndcg@10": 0.3547,
+        "recall@20": 0.7846,
+        "top10_mean_popularity": 16.1345,
+        "top10_n_categories": 4.13,
+        "cold_ndcg@10": 0.5656
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.6476,
+            "mrr": 0.2793,
+            "ndcg@5": 0.2982,
+            "ndcg@10": 0.3547,
+            "recall@20": 0.7846,
+            "top10_mean_popularity": 16.1345,
+            "top10_n_categories": 4.13,
+            "cold_ndcg@10": 0.5656
+          },
+          "n": 100,
+          "cold": {
+            "auc": 0.6413,
+            "mrr": 0.271,
+            "ndcg@5": 0.2906,
+            "ndcg@10": 0.3454,
+            "recall@20": 0.7779,
+            "top10_mean_popularity": 15.9438,
+            "top10_n_categories": 4.134,
+            "cold_ndcg@10": 0.5656,
+            "n": 97
+          },
+          "short_history": {
+            "auc": 0.6249,
+            "mrr": 0.2013,
+            "ndcg@5": 0.2119,
+            "ndcg@10": 0.2376,
+            "recall@20": 0.6058,
+            "top10_mean_popularity": 15.5154,
+            "top10_n_categories": 5.0769,
+            "cold_ndcg@10": 0.6257,
+            "n": 13
+          },
+          "seconds": 0.8
+        }
+      ]
+    },
+    "full": {
+      "mean_over_seeds": {
+        "auc": 0.6494,
+        "mrr": 0.2796,
+        "ndcg@5": 0.2984,
+        "ndcg@10": 0.3548,
+        "recall@20": 0.7846,
+        "top10_mean_popularity": 16.1345,
+        "top10_n_categories": 4.13,
+        "cold_ndcg@10": 0.5613
+      },
+      "runs": [
+        {
+          "all": {
+            "auc": 0.6494,
+            "mrr": 0.2796,
+            "ndcg@5": 0.2984,
+            "ndcg@10": 0.3548,
+            "recall@20": 0.7846,
+            "top10_mean_popularity": 16.1345,
+            "top10_n_categories": 4.13,
+            "cold_ndcg@10": 0.5613
+          },
+          "n": 100,
+          "cold": {
+            "auc": 0.6425,
+            "mrr": 0.2733,
+            "ndcg@5": 0.2889,
+            "ndcg@10": 0.3471,
+            "recall@20": 0.7779,
+            "top10_mean_popularity": 15.9438,
+            "top10_n_categories": 4.134,
+            "cold_ndcg@10": 0.5613,
+            "n": 97
+          },
+          "short_history": {
+            "auc": 0.6394,
+            "mrr": 0.2009,
+            "ndcg@5": 0.197,
+            "ndcg@10": 0.2362,
+            "recall@20": 0.6058,
+            "top10_mean_popularity": 15.5154,
+            "top10_n_categories": 5.0769,
+            "cold_ndcg@10": 0.6257,
+            "n": 13
+          },
+          "seconds": 460.2,
+          "llm": {
+            "impressions": 100,
+            "fallback": 1,
+            "partial": 41,
+            "unknown_ids": 0,
+            "llm_errors": 0,
+            "fallback_rate": 0.01,
+            "client": {
+              "calls": 72,
+              "cache_hits": 28,
+              "cache_misses": 0,
+              "errors": 0,
+              "retries": 62,
+              "seconds": 453.37874539982295,
+              "input_tokens": 51108,
+              "output_tokens": 17208,
+              "cost_usd": 0.0
+            }
+          }
+        }
+      ]
+    },
+    "explanation_fidelity": {
+      "explained_in_top_k": 525,
+      "share_explained_that_drop": 0.2667,
+      "mean_rank_loss_when_drop": 3.41
+    }
+  }
+}
