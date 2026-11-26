@@ -35,7 +35,7 @@ llm:
   extra_body:
     reasoning_effort: low
   cache_dir: results/llm_cache
-  prompt_version: v1
+  prompt_version: v2
   timeout: 60                # seconds before a call counts as failed (the caller falls back)
   price_input_per_mtok: 0.0  # $ per million input tokens of the chosen model, for the cost measure
   price_output_per_mtok: 0.0 # $ per million output tokens
