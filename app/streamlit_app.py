@@ -1,4 +1,3 @@
-
 """Streamlit frontend (SE). Talks to the API only."""
 
 import html
@@ -12,174 +11,108 @@ import streamlit as st
 API = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
 PAGES = ["Recommendations", "Profile", "History", "New reader"]
 
-st.set_page_config(
-    page_title="News Companion",
-    page_icon="📰",
-    layout="wide"
-)
+st.set_page_config(page_title="News Companion", page_icon="📰", layout="wide")
 
 # ---------------------------------------------------------
-# GLOBAL DESIGN
+# GLOBAL DESIGN  ("Evening edition": forest ink, saffron marker, cool paper)
 # ---------------------------------------------------------
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    --ink: #18243A;
-    --muted: #718096;
-    --line: #E8EDF4;
-    --paper: #F5F7FB;
-    --white: #FFFFFF;
-    --accent: #635BDB;
-    --accent-soft: #F0EFFF;
-    --mint: #E8F7F1;
+    --paper: #ECEEE9;
+    --card: #F8F9F6;
+    --ink: #10231C;
+    --forest: #0E2B22;
+    --forest-2: #17392E;
+    --saffron: #F5B800;
+    --saffron-soft: #FBEFC2;
+    --muted: #5B6761;
+    --line: #CBD2CB;
 }
-.stApp {
-    background:
-        radial-gradient(circle at 82% 0%, rgba(222,219,255,.38), transparent 26rem),
-        var(--paper);
-    color: var(--ink);
-    font-family: 'DM Sans', sans-serif;
+
+.stApp { background: var(--paper); color: var(--ink); font-family: 'Instrument Sans', sans-serif; }
+.block-container { max-width: 1100px; padding-top: 2.5rem; padding-bottom: 5rem; }
+header[data-testid="stHeader"] { background: transparent; }
+
+/* ---------- Typography ---------- */
+h1, h2, h3 { color: var(--ink) !important; font-family: 'Fraunces', Georgia, serif !important; font-variation-settings: "opsz" 144; }
+h1 { font-size: clamp(3rem, 6vw, 5.2rem) !important; font-weight: 800 !important; letter-spacing: -.035em; line-height: .98 !important; padding: 0 0 .4rem !important; }
+h2 { font-size: 2rem !important; font-weight: 600 !important; letter-spacing: -.02em; }
+h3 { font-size: 1.55rem !important; font-weight: 600 !important; line-height: 1.2 !important; letter-spacing: -.01em; }
+p, li { line-height: 1.7; }
+[data-testid="stCaptionContainer"] p { color: var(--muted); }
+
+/* ---------- Sidebar ---------- */
+[data-testid="stSidebar"] { background: var(--forest) !important; border-right: 0; }
+[data-testid="stSidebar"] * { color: #E9EFE9 !important; }
+[data-testid="stSidebar"] h1 { font-size: 2.1rem !important; letter-spacing: -.03em; line-height: 1.05 !important; color: #fff !important; }
+[data-testid="stSidebar"] h3 { font-size: 1.25rem !important; color: var(--saffron) !important; }
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #9DB3A8 !important; font-size: .82rem; }
+[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,.12); }
+[data-testid="stSidebar"] [role="radiogroup"] label { padding: .35rem .6rem; border-radius: 6px; transition: background .15s; }
+[data-testid="stSidebar"] [role="radiogroup"] label:hover { background: rgba(255,255,255,.07); }
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) { background: var(--saffron); }
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) * { color: var(--forest) !important; font-weight: 700; }
+[data-testid="stSidebar"] input, [data-testid="stSidebar"] [data-baseweb="select"] > div {
+    background: var(--forest-2) !important; border: 1px solid rgba(255,255,255,.18) !important; color: #fff !important; border-radius: 6px;
 }
-.block-container {
-    max-width: 1320px;
-    padding-top: 2.1rem;
-    padding-bottom: 4rem;
-}
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #17243B 0%, #202D49 100%);
-    border-right: 1px solid rgba(255,255,255,.08);
-}
-[data-testid="stSidebar"] * { color: #F7F8FF; }
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    color: #B9C4D8;
-}
-[data-testid="stSidebar"] [data-testid="stRadio"] label {
-    padding: .25rem 0;
-    font-weight: 600;
-}
-h1, h2, h3 {
-    font-family: 'Manrope', sans-serif !important;
-    color: var(--ink) !important;
-    letter-spacing: -.045em;
-}
-h1 {
-    font-size: clamp(2.15rem, 4vw, 3.15rem) !important;
-    font-weight: 800 !important;
-    line-height: 1.12 !important;
-}
-h2 { font-size: 1.65rem !important; font-weight: 800 !important; }
-h3 { font-size: 1.13rem !important; font-weight: 750 !important; letter-spacing: -.025em; }
-p, li { line-height: 1.65; }
-[data-testid="stCaptionContainer"] p {
-    color: var(--muted);
-    font-size: .82rem;
-}
-.cat {
-    display: inline-flex;
-    align-items: center;
-    padding: .34rem .72rem;
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: #554CC5;
-    font-size: .68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    margin: .1rem 0 .55rem;
-}
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(255,255,255,.94);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    padding: 1rem 1.15rem;
-    box-shadow: 0 8px 28px rgba(30,45,75,.045);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-[data-testid="stVerticalBlockBorderWrapper"]:hover {
-    border-color: #D9D7FA;
-    box-shadow: 0 14px 34px rgba(30,45,75,.085);
-}
-.stButton > button {
-    border-radius: 12px;
-    min-height: 2.55rem;
-    border: 1px solid #E2E7F0;
-    background: #FFFFFF;
-    color: #34415A;
-    font-weight: 700;
-    transition: all .18s ease;
-}
-.stButton > button:hover {
-    border-color: #A9A4F2;
-    color: #5148C7;
-    background: #F8F7FF;
-}
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #655CE0, #8278EF);
-    border: 0;
-    color: white;
-    box-shadow: 0 7px 16px rgba(99,91,219,.22);
-}
-.stButton > button[kind="primary"]:hover {
-    background: linear-gradient(135deg, #554CCB, #746AE5);
-    color: white;
-}
-[data-testid="stMetric"] {
-    background: white;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 1rem 1.15rem;
-    box-shadow: 0 5px 18px rgba(30,45,75,.035);
-}
-[data-testid="stMetricLabel"] p {
-    color: var(--muted) !important;
-    font-weight: 650;
-}
-[data-testid="stMetricValue"] {
-    color: var(--ink);
-    font-family: 'Manrope', sans-serif;
-    font-weight: 800;
-}
-[data-testid="stExpander"] {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: #FBFCFE;
-}
-.chain {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .4rem;
-    margin: .7rem 0 .8rem;
-    font-size: .78rem;
-}
-.chain .node {
-    padding: .36rem .68rem;
-    border-radius: 999px;
-    border: 1px solid #E5EAF2;
-    background: #F8FAFD;
-    color: #53627A;
-}
-.chain .src { background: #EEF4FF; color: #315FA8; border-color: #DCE8FF; }
-.chain .ent { background: #FFF4E9; color: #A95B18; border-color: #F8E4D0; font-weight: 700; }
-.chain .dst { background: #EAF8F1; color: #217653; border-color: #D6F0E3; }
-.chain .arrow { color: #A3AEC0; }
+[data-testid="stSidebar"] input:focus { border-color: var(--saffron) !important; }
+
+/* ---------- Eyebrow / hero pieces ---------- */
+.eyebrow { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .85rem; font-weight: 600; margin-bottom: .9rem; }
+.eyebrow i { width: 10px; height: 10px; border-radius: 50%; background: var(--saffron); box-shadow: 0 0 0 4px var(--saffron-soft); }
+.lede { max-width: 560px; color: var(--muted); font-size: 1.12rem; line-height: 1.6; margin: .2rem 0 1.6rem; }
+
+/* Status strip (replaces the three stat boxes) */
+.strip { display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; padding: .7rem 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+.strip b { color: var(--ink); font-weight: 700; }
+.strip span.live::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--saffron); margin-right: .45rem; }
+
+/* Alerts */
+[data-testid="stAlert"] { background: var(--saffron-soft); border: 0; border-left: 4px solid var(--saffron); border-radius: 0; color: var(--ink); }
+[data-testid="stAlert"] * { color: var(--ink) !important; }
+
+/* ---------- Article cards ---------- */
+[class*="st-key-card_"] { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 1.6rem 1.8rem; box-shadow: none; transition: border-color .2s, box-shadow .2s; }
+[class*="st-key-card_"]:hover { border-color: var(--ink); box-shadow: 6px 6px 0 var(--saffron); }
+.stButton > button { white-space: nowrap; }
+[data-testid="stImage"] img { border-radius: 2px; object-fit: cover; }
+
+.rank { display: flex; align-items: baseline; gap: 1rem; margin-bottom: .6rem; }
+.rank .n { font-family: 'Fraunces', serif; font-weight: 800; font-size: 3.4rem; line-height: .9; letter-spacing: -.04em; color: var(--saffron); -webkit-text-stroke: 1.5px var(--ink); }
+.rank .c { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); border-bottom: 2px solid var(--saffron); padding-bottom: 2px; }
+.cat { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-bottom: 2px solid var(--saffron); padding-bottom: 2px; margin: .4rem 0; }
+.abs { color: var(--muted); font-size: .98rem; line-height: 1.65; margin: .3rem 0 .8rem; max-width: 68ch; }
+
+/* Evidence chain */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .4rem 0; }
+.chain .node { padding: .3rem .7rem; border-radius: 999px; font-size: .8rem; font-weight: 600; border: 1px solid var(--line); background: #fff; }
+.chain .src { background: var(--forest); color: #fff; border-color: var(--forest); }
+.chain .ent { background: var(--saffron-soft); border-color: #E6CF7A; }
+.chain .dst { background: var(--saffron); border-color: var(--saffron); }
+.chain .arrow { color: var(--muted); }
+
+/* ---------- Controls ---------- */
+.stButton > button { border-radius: 4px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font-weight: 600; transition: background .15s, color .15s, transform .1s; }
+.stButton > button:hover { background: var(--saffron); border-color: var(--ink); color: var(--ink); }
+.stButton > button:active { transform: translateY(1px); }
+.stButton > button[kind="primary"] { background: var(--ink); color: #fff; }
+.stButton > button[kind="primary"]:hover { background: var(--saffron); color: var(--ink); }
+.stButton > button:focus-visible, input:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+
+[data-testid="stMetric"] { background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--ink); border-radius: 0; padding: 1rem 1.1rem; }
+[data-testid="stMetricValue"] { font-family: 'Fraunces', serif; font-weight: 800; font-size: 2.4rem; }
+[data-testid="stExpander"] { border: 1px solid var(--line); border-radius: 4px; background: transparent; }
 hr { border-color: var(--line); }
-[data-testid="stAlert"] { border-radius: 14px; }
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    overflow: hidden;
-}
-div[data-testid="stPills"] button {
-    border-radius: 999px !important;
-}
-@media (max-width: 700px) {
-    .block-container { padding: 1.2rem 1rem 2.5rem; }
-    [data-testid="stVerticalBlockBorderWrapper"] { padding: .8rem; }
-}
+
+/* One page-load reveal, nothing else moves on its own */
+.block-container > div > [data-testid="stVerticalBlock"] > div:first-child { animation: rise .5s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (max-width: 700px) { .block-container { padding: 1rem; } .rank .n { font-size: 2.6rem; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -221,6 +154,13 @@ def chain_html(item):
     nodes.append('<span class="node dst">this article</span>')
 
     return '<div class="chain">' + '<span class="arrow">→</span>'.join(nodes) + "</div>"
+
+
+def abstract_html(text):
+    """Truncated abstract preview (design helper)."""
+    if len(text) > 250:
+        text = text[:247].rsplit(" ", 1)[0] + "…"
+    return f'<div class="abs">{html.escape(text)}</div>'
 
 
 def react(user_id, item, feedback):
@@ -267,7 +207,7 @@ with st.sidebar:
 
     st.title("📰 News Companion")
 
-    st.caption("YOUR PERSONALIZED NEWS SPACE")
+    st.caption("Your personalized news space")
 
     st.divider()
 
@@ -319,18 +259,13 @@ page = st.session_state["page"]
 if page == "Recommendations":
 
     st.markdown(
-        '<div style="display:flex;align-items:center;gap:.55rem;'
-        'color:#655CE0;font-size:.72rem;font-weight:800;letter-spacing:.13em;'
-        'text-transform:uppercase;margin-bottom:.65rem;">'
-        '<span style="width:26px;height:2px;background:#8278EF;display:inline-block;"></span>'
-        'YOUR PERSONALIZED NEWS FEED</div>',
+        '<div class="eyebrow"><i></i>Your personalized news feed</div>',
         unsafe_allow_html=True
     )
 
     st.title("Your daily briefing")
     st.markdown(
-        '<div style="max-width:690px;color:#718096;font-size:1.04rem;'
-        'line-height:1.7;margin-top:-.45rem;">A smarter way to stay informed. '
+        '<div class="lede">A smarter way to stay informed. '
         'Stories selected around your interests, reading history and feedback.</div>',
         unsafe_allow_html=True
     )
@@ -353,14 +288,13 @@ if page == "Recommendations":
     }.get(status, f"graph ranking ({status})")
 
     st.markdown(
-        '<div style="height:1px;background:linear-gradient(90deg,#DAD7FF,'
-        'rgba(218,215,255,0));margin:1.5rem 0 1rem;"></div>',
+        f'<div class="strip">'
+        f'<span class="live">Reader <b>{html.escape(user_id)}</b> · {html.escape(label)}</span>'
+        f'<span>{ms:.0f} ms round trip</span>'
+        f'<span>Server {server_ms} ms</span>'
+        f'</div>',
         unsafe_allow_html=True
     )
-    c1, c2, c3 = st.columns([2, 1, 1])
-    c1.caption(f"👤  Reader **{user_id}** · {label}")
-    c2.caption(f"⚡  {ms:.0f} ms round trip")
-    c3.caption(f"◷  Server {server_ms} ms")
 
     if status == "fallback_cache_miss":
         st.info(
@@ -368,7 +302,7 @@ if page == "Recommendations":
             "in the background. Refresh in a few seconds to see it."
         )
 
-        if st.button("↻ Refresh recommendations"):
+        if st.button("↻ Refresh recommendations", type="primary"):
             st.rerun()
 
     if msg := st.session_state.pop("last_action", None):
@@ -381,7 +315,7 @@ if page == "Recommendations":
 
     for i, it in enumerate(data["items"], 1):
 
-        with st.container(border=True):
+        with st.container(border=True, key=f"card_{i}"):
 
             # Some article sources expose a thumbnail URL; the current
             # MIND-style API may not. In that case, show a designed fallback.
@@ -396,51 +330,29 @@ if page == "Recommendations":
             else:
                 image_col, content_col = None, None
 
+            cat = html.escape(it.get("category") or "NEWS")
+
             if image_col is not None:
                 with image_col:
                     st.image(image_url, use_container_width=True)
                 with content_col:
                     st.markdown(
-                        f'<div class="cat">{html.escape(it.get("category") or "NEWS")}</div>',
+                        f'<div class="rank"><span class="n">{i:02d}</span>'
+                        f'<span class="c">{cat}</span></div>',
                         unsafe_allow_html=True
                     )
                     st.markdown(f"### {it.get('title') or it['article_id']}")
                     if it.get("abstract"):
-                        abstract_preview = it["abstract"]
-                        if len(abstract_preview) > 250:
-                            abstract_preview = abstract_preview[:247].rsplit(" ", 1)[0] + "…"
-                        st.markdown(
-                            f'<div style="color:#66748A;font-size:.91rem;line-height:1.65;'
-                            f'margin:.25rem 0 .55rem;">{html.escape(abstract_preview)}</div>',
-                            unsafe_allow_html=True
-                        )
-                    st.caption(f"STORY {i:02d}")
+                        st.markdown(abstract_html(it["abstract"]), unsafe_allow_html=True)
             else:
                 st.markdown(
-                    '<div style="background:linear-gradient(115deg,#ECEBFF,#F7EFFF 55%,#E9F5F2);'
-                    'border:1px solid #E9E7FA;border-radius:15px;padding:1rem 1.1rem;'
-                    'margin-bottom:.9rem;display:flex;justify-content:space-between;'
-                    'align-items:center;">'
-                    '<span style="font-size:.72rem;font-weight:800;letter-spacing:.12em;'
-                    'color:#6259C9;">THE DAILY EDIT</span>'
-                    f'<span style="font-size:.75rem;color:#7D83A0;font-weight:700;">STORY {i:02d}</span>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-                st.markdown(
-                    f'<div class="cat">{html.escape(it.get("category") or "NEWS")}</div>',
+                    f'<div class="rank"><span class="n">{i:02d}</span>'
+                    f'<span class="c">{cat}</span></div>',
                     unsafe_allow_html=True
                 )
                 st.markdown(f"### {it.get('title') or it['article_id']}")
                 if it.get("abstract"):
-                    abstract_preview = it["abstract"]
-                    if len(abstract_preview) > 250:
-                        abstract_preview = abstract_preview[:247].rsplit(" ", 1)[0] + "…"
-                    st.markdown(
-                        f'<div style="color:#66748A;font-size:.91rem;line-height:1.65;'
-                        f'margin:.25rem 0 .55rem;">{html.escape(abstract_preview)}</div>',
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(abstract_html(it["abstract"]), unsafe_allow_html=True)
 
             if it.get("evidence_path") or it.get("llm_reason"):
                 with st.expander("✦  Why recommended"):
@@ -458,24 +370,18 @@ if page == "Recommendations":
                 with st.expander("Read full abstract"):
                     st.write(it["abstract"])
 
-            st.markdown(
-                '<div style="height:1px;background:#EDF0F5;margin:.55rem 0 .7rem;"></div>',
-                unsafe_allow_html=True
-            )
-            buttons = st.container(horizontal=True)
+            button_col1, button_col2, _spacer = st.columns([1, 1.5, 3])
 
-            if buttons.button(
+            if button_col1.button(
                 "♡  Like",
-                key=f"like_{it['article_id']}",
-                width="content"
+                key=f"like_{it['article_id']}"
             ):
                 react(user_id, it, "like")
                 st.rerun()
 
-            if buttons.button(
+            if button_col2.button(
                 "↘  Not interested",
-                key=f"dislike_{it['article_id']}",
-                width="content"
+                key=f"dislike_{it['article_id']}"
             ):
                 react(user_id, it, "dislike")
                 st.rerun()
@@ -491,7 +397,7 @@ if page == "Recommendations":
 
 elif page == "Profile":
 
-    st.caption("✦  YOUR READER PROFILE")
+    st.markdown('<div class="eyebrow"><i></i>Your reader profile</div>', unsafe_allow_html=True)
     st.title("Your interests")
 
     prof, _, _ = api(
@@ -529,7 +435,8 @@ elif page == "Profile":
         if prof["categories"]:
             st.bar_chart(
                 pd.Series(prof["categories"], name="weight")
-                .sort_values(ascending=False)
+                .sort_values(ascending=False),
+                color="#0E2B22"
             )
 
     with right:
@@ -552,7 +459,7 @@ elif page == "Profile":
 
 elif page == "History":
 
-    st.caption("✦  YOUR ACTIVITY")
+    st.markdown('<div class="eyebrow"><i></i>Your activity</div>', unsafe_allow_html=True)
     st.title("Reading history")
 
     hist, _, _ = api(
@@ -594,7 +501,7 @@ elif page == "History":
 
 else:
 
-    st.caption("✦  GET STARTED")
+    st.markdown('<div class="eyebrow"><i></i>Get started</div>', unsafe_allow_html=True)
     st.title("Create your reader profile")
 
     st.write(
