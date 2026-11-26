@@ -7,32 +7,83 @@ We recommend news articles with an entity graph built from MIND (Wikidata entiti
 personalised PageRank that keeps an evidence path for each article ("Because you read X: Tesla -> Panasonic"),
 and, from Week 3, an LLM that re-ranks the top 10 under code checks.
 
-## Run it locally
+## Run it locally (about 5 min, no API key needed)
+
+Requirements: Python 3.11 or 3.12, and Git. Tested on Windows 11 (PowerShell) and Linux.
+
+### 1. Install (terminal 1)
 
 ```bash
-git clone <repo-url> && cd <repo>
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+git clone https://github.com/MELKKIORR/recsys-mind.git
+cd recsys-mind
+python -m venv .venv
+```
 
+Activate the virtual environment:
+
+- Windows PowerShell: `.venv\Scripts\activate` (if scripts are blocked, run `Set-ExecutionPolicy -Scope Process Bypass` first)
+- macOS / Linux: `source .venv/bin/activate`
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Prepare the data (about 1 min)
+
+```bash
 python scripts/download_mind.py          # MIND small into data/raw/ (research use only)
 python -m src.data.preprocess            # cleaning + split, prints the data stats
 python -m src.data.db                    # SQLite database data/recsys.db
 python -m src.graph.build_graph          # graph + artefacts in results/artefacts/
-
-uvicorn api.main:app --host 0.0.0.0 --port 8000        # API, docs at http://127.0.0.1:8000/docs
-streamlit run app/streamlit_app.py                     # website at http://127.0.0.1:8501, second terminal
 ```
 
-The API serves the graph model with the LLM re-ranking of the top 10 (`PREDICT_MODE=mock` gives the
-popular-articles mock of Week 2). The LLM answer is read from the disk cache (`results/llm_cache/`), never
-called while the reader waits: on a cache miss the graph ranking is served and the LLM is called in the
-background, so the next request of that reader is re-ranked (`LLM_CACHE_ONLY=0` calls it live instead).
-Choose the LLM in `configs/default.yaml` (see `src/llm/README.md`).
+### 3. Start the API (terminal 1, keep it open)
 
-On Windows use `127.0.0.1`, not `localhost`: `localhost` tries IPv6 first and adds about 2 s to every call.
-Without the real data, `python scripts/make_toy_data.py` writes a small fake dataset in the MIND format in
-`data/toy/raw`; add `configs/test.yaml` after each `python -m ...` command to run the pipeline on it, and
-start the API with `RECSYS_CONFIG=configs/test.yaml`.
+```bash
+uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+http://127.0.0.1:8000/health should show `"status": "ok"`. API docs: http://127.0.0.1:8000/docs.
+
+### 4. Start the website (terminal 2)
+
+Open a second terminal, go to the `recsys-mind` folder and activate the virtual environment again
+(same command as in step 1), then:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Open http://127.0.0.1:8501, pick a demo reader, then like an article: the next top 10 changes.
+On Windows use `127.0.0.1`, not `localhost` (`localhost` tries IPv6 first and adds about 2 s per call).
+
+### No API key needed
+
+Without a key, recommendations come from the graph model with their "Because you read X" explanation;
+only the LLM re-ranking of the top 10 is skipped. To enable it, set the key before step 3
+(`$env:LLM_API_KEY="..."` in PowerShell, `export LLM_API_KEY=...` on Linux/macOS) and see `src/llm/README.md`.
+The LLM answer is read from the disk cache (`results/llm_cache/`), never called while the reader waits:
+on a cache miss the graph ranking is served and the LLM is called in the background, so the next request
+of that reader is re-ranked (`LLM_CACHE_ONLY=0` calls it live instead). `PREDICT_MODE=mock` gives the
+popular-articles mock of Week 2.
+
+### If the MIND download fails
+
+Run everything on a small fake dataset in the MIND format (a few seconds). Replace steps 2 and 3 with:
+
+```bash
+python scripts/make_toy_data.py
+python -m src.data.preprocess configs/test.yaml
+python -m src.data.db configs/test.yaml
+python -m src.graph.build_graph configs/test.yaml
+```
+
+Then start the API with the test config:
+
+- Windows PowerShell: `$env:RECSYS_CONFIG="configs/test.yaml"; uvicorn api.main:app --host 127.0.0.1 --port 8000`
+- macOS / Linux: `RECSYS_CONFIG=configs/test.yaml uvicorn api.main:app --host 127.0.0.1 --port 8000`
+
+Step 4 is unchanged.
 
 ### With Docker
 
